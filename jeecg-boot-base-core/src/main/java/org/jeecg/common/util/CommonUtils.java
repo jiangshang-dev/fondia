@@ -151,6 +151,8 @@ public class CommonUtils {
         try {
             if (CommonConstant.UPLOAD_TYPE_MINIO.equals(uploadType)) {
                 url = MinioUtil.upload(file, bizPath);
+            } else if (CommonConstant.UPLOAD_TYPE_RUSRFS.equals(uploadType)) {
+                url = MinioUtil.upload(file, bizPath);
             } else {
                 url = OssBootUtil.upload(file, bizPath);
             }

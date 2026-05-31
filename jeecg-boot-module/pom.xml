@@ -15,7 +15,7 @@
     <modules>
         <module>jeecg-module-demo</module>
         <module>jeecg-boot-module-airag</module>
+        <module>jeecg-module-media</module>
     </modules>
-
 
 </project>
