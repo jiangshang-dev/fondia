@@ -187,11 +187,16 @@ public class VodController {
     @DeleteMapping("/video")
     public Result<Map<String, Object>> deleteVideo(@RequestParam String videoId) {
         try {
-            DeleteVideoResponse response = aliyunVodService.deleteVideo(videoId);
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("message", "删除成功");
+            VideoInfoEntity videoInfo = videoInfoService.getById(videoId);
+            String videoId1 = videoInfo.getVideoId();
+            boolean isSuccess = videoInfoService.removeById(videoId);
 
+            Map<String, Object> result = new HashMap<>();
+            if (isSuccess) {
+                DeleteVideoResponse response = aliyunVodService.deleteVideo(videoId1);
+                result.put("requestId", response.getRequestId());
+            }
+            result.put("message", "删除成功");
             return Result.ok(result);
         } catch (Exception e) {
             e.printStackTrace();
