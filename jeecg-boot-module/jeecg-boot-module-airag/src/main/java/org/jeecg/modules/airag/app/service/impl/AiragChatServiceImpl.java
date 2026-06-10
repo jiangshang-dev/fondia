@@ -177,6 +177,7 @@ public class AiragChatServiceImpl implements IAiragChatService {
 
     @Override
     public SseEmitter debugApp(AppDebugParams appDebugParams) {
+        Boolean enableSearch = appDebugParams.getEnableSearch();
         AssertUtils.assertNotEmpty("参数异常", appDebugParams);
         String userMessage = appDebugParams.getContent();
         AssertUtils.assertNotEmpty("至少发送一条消息", userMessage);
