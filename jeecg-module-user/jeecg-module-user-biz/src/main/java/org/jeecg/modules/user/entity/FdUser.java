@@ -1,0 +1,105 @@
+package org.jeecg.modules.user.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
+
+import java.io.Serializable;
+import java.util.Date;
+
+/**
+ * @Description: App用户表
+ * @Author: jeecg-boot
+ * @Date:   2024-01-01
+ * @Version: V1.0
+ */
+@Data
+@TableName("fd_user")
+@EqualsAndHashCode(callSuper = false)
+@Accessors(chain = true)
+@Schema(description = "App用户表")
+public class FdUser implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**主键*/
+    @TableId(type = IdType.ASSIGN_ID)
+    @Schema(description = "主键")
+    private Long id;
+
+    /**用户名*/
+    @Schema(description = "用户名")
+    private String username;
+
+    /**密码*/
+    @Schema(description = "密码")
+    private String password;
+
+    /**用户昵称*/
+    @Schema(description = "用户昵称")
+    private String nickname;
+
+    /**头像*/
+    @Schema(description = "头像")
+    private String avatar;
+
+    /**绑定手机号*/
+    @Schema(description = "绑定手机号")
+    private String phone;
+
+    /**绑定电子邮箱*/
+    @Schema(description = "绑定电子邮箱")
+    private String email;
+
+    /**性别 (0:未知, 1:男, 2:女)*/
+    @Schema(description = "性别 (0:未知, 1:男, 2:女)")
+    private String gender;
+
+    /**出生日期*/
+    @Schema(description = "出生日期")
+    private Date birthday;
+
+    /**居住省份*/
+    @Schema(description = "居住省份")
+    private String province;
+
+    /**居住城市*/
+    @Schema(description = "居住城市")
+    private String city;
+
+    /**居住区/县*/
+    @Schema(description = "居住区/县")
+    private String district;
+
+    /**个性签名*/
+    @Schema(description = "个性签名")
+    private String sign;
+
+    /**厨艺等级 (如 1:初学者, 4:厨艺达人)*/
+    @Schema(description = "厨艺等级 (如 1:初学者, 4:厨艺达人)")
+    private Integer cookingLevel;
+
+    /**账号状态 (1:正常, 0:禁用, -1:已注销)*/
+    @Schema(description = "账号状态 (1:正常, 0:禁用, -1:已注销)")
+    private Integer status;
+
+    /**创建用户*/
+    @Schema(description = "创建用户")
+    private Integer createUser;
+
+    /**创建时间*/
+    @Schema(description = "创建时间")
+    private Long createTime;
+
+    /**更新用户*/
+    @Schema(description = "更新用户")
+    private Integer updateUser;
+
+    /**更新时间*/
+    @Schema(description = "更新时间")
+    private Long updateTime;
+}
