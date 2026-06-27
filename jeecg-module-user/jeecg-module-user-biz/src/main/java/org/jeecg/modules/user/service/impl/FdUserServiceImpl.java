@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.exception.JeecgBootException;
+import org.jeecg.common.util.PasswordUtil;
+import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
@@ -127,13 +129,18 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         // 2. 查询用户是否存在
         FdUser user = getUserByEmail(email);
 
+        String username = "用户" + System.currentTimeMillis();
         boolean isNewUser = false;
         if (user == null) {
             // 3. 用户不存在，创建新用户
             isNewUser = true;
             user = new FdUser();
             user.setEmail(email);
-            user.setNickname("用户" + System.currentTimeMillis());
+            user.setNickname(username);
+            user.setUsername(username);
+            String salt = oConvertUtils.randomGen(8);
+            String passwordEncode = PasswordUtil.encrypt(username, "123456", salt);
+            user.setPassword(passwordEncode);
             user.setStatus(1);
             user.setCreateTime(System.currentTimeMillis());
             user.setUpdateTime(System.currentTimeMillis());

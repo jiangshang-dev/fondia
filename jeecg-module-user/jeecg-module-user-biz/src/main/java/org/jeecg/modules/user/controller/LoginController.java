@@ -33,6 +33,11 @@ public class LoginController {
     @Resource
     private IVerificationCodeService verificationCodeService;
 
+    @GetMapping("/test")
+    public Result<?> test() {
+        return Result.ok("test");
+    }
+
     /**
      * 发送邮箱验证码
      */
