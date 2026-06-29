@@ -6,6 +6,7 @@ import org.jeecg.modules.user.dto.PasswordLoginDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.entity.FdUser;
 import org.jeecg.modules.user.vo.LoginResultVO;
+import org.jeecg.modules.user.vo.UserInfoVO;
 
 /**
  * @Description: App用户表 Service接口
@@ -49,4 +50,9 @@ public interface IFdUserService extends IService<FdUser> {
      * @return 用户信息
      */
     FdUser getUserByAccount(String account);
+
+    /**
+     * 根据 Token 获取当前登录用户信息
+     */
+    UserInfoVO getUserInfo(String authorization);
 }

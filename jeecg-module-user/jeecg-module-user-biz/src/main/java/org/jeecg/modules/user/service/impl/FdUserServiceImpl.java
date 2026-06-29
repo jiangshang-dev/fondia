@@ -228,6 +228,63 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         return this.getOne(queryWrapper);
     }
 
+    @Override
+    public UserInfoVO getUserInfo(String authorization) {
+        String token = extractBearerToken(authorization);
+        if (oConvertUtils.isEmpty(token)) {
+            throw new JeecgBootException("Token不能为空");
+        }
+
+        String username = JwtUtil.getUsername(token);
+        if (oConvertUtils.isEmpty(username)) {
+            throw new JeecgBootException("Token无效");
+        }
+
+        FdUser user = resolveUserFromJwtUsername(username);
+        if (user == null) {
+            throw new JeecgBootException("用户不存在");
+        }
+
+        if (user.getStatus() == null || user.getStatus() != 1) {
+            throw new JeecgBootException("账号已被禁用或已注销");
+        }
+
+        if (!JwtUtil.verify(token, username, user.getPassword())) {
+            throw new JeecgBootException("Token无效或已过期");
+        }
+
+        return convertToUserInfoVO(user);
+    }
+
+    /**
+     * 解析 Authorization 请求头，支持 Bearer 前缀
+     */
+    private String extractBearerToken(String authorization) {
+        if (oConvertUtils.isEmpty(authorization)) {
+            return null;
+        }
+        String value = authorization.trim();
+        if (value.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return value.substring(7).trim();
+        }
+        return value;
+    }
+
+    /**
+     * 根据 JWT 中的 username 字段反查用户（与签发 Token 时的 resolveJwtUsername 对应）
+     */
+    private FdUser resolveUserFromJwtUsername(String username) {
+        FdUser user = getUserByAccount(username);
+        if (user != null) {
+            return user;
+        }
+        try {
+            return getUserById(Long.parseLong(username));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
     /**
      * 根据邮箱查询用户
      */

@@ -12,6 +12,7 @@ import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.service.IFdUserService;
 import org.jeecg.modules.user.service.IVerificationCodeService;
 import org.jeecg.modules.user.vo.LoginResultVO;
+import org.jeecg.modules.user.vo.UserInfoVO;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -114,10 +115,8 @@ public class LoginController {
      */
     @Operation(summary = "获取当前用户信息")
     @GetMapping("/info")
-    public Result<?> getUserInfo(@RequestHeader("Authorization") String token) {
-        // TODO: 实现从token中获取用户ID并查询用户信息
-
-        return Result.ok();
+    public Result<UserInfoVO> getUserInfo(@RequestHeader("Authorization") String authorization) {
+        return Result.ok(userService.getUserInfo(authorization));
     }
 
     /**
