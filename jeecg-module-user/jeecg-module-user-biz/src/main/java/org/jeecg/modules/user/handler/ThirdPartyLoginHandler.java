@@ -1,5 +1,7 @@
 package org.jeecg.modules.user.handler;
 
+import org.jeecg.common.util.PasswordUtil;
+import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.entity.FdUser;
 import org.jeecg.modules.user.entity.FdUserAuth;
@@ -61,7 +63,11 @@ public interface ThirdPartyLoginHandler {
      * @return 用户信息
      */
     default FdUser buildNewUser(ThirdPartyLoginDTO loginDTO, ThirdPartyUserInfo userInfo) {
+        String username = "user_" + System.currentTimeMillis();
+        String salt = oConvertUtils.randomGen(8);
         FdUser user = new FdUser();
+        user.setUsername(username);
+        user.setPassword(PasswordUtil.encrypt(username, oConvertUtils.randomGen(16), salt));
         user.setNickname(userInfo.getNickname() != null ? userInfo.getNickname() : "用户" + System.currentTimeMillis());
         user.setAvatar(userInfo.getAvatar());
         user.setPhone(loginDTO.getPhone());

@@ -116,6 +116,7 @@ public class LoginController {
     @GetMapping("/info")
     public Result<?> getUserInfo(@RequestHeader("Authorization") String token) {
         // TODO: 实现从token中获取用户ID并查询用户信息
+
         return Result.ok();
     }
 

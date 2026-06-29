@@ -4,8 +4,11 @@ import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.jeecg.common.constant.CommonConstant;
 import org.jeecg.common.exception.JeecgBootException;
+import org.jeecg.common.system.util.JwtUtil;
 import org.jeecg.common.util.PasswordUtil;
+import org.jeecg.common.util.encryption.AesEncryptUtil;
 import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
@@ -136,7 +139,7 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
             isNewUser = true;
             user = new FdUser();
             user.setEmail(email);
-            user.setNickname(username);
+            user.setNickname(System.currentTimeMillis()+"");
             user.setUsername(username);
             String salt = oConvertUtils.randomGen(8);
             String passwordEncode = PasswordUtil.encrypt(username, "123456", salt);
@@ -187,7 +190,8 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         }
 
         // 这里使用BCrypt验证密码，实际项目中密码应该是加密存储的
-        if (!BCrypt.checkpw(password, user.getPassword())) {
+        String passwordEncode = AesEncryptUtil.resolvePassword(user.getPassword());
+        if (!BCrypt.checkpw(password, passwordEncode)) {
             throw new JeecgBootException("账号或密码错误");
         }
 
@@ -235,20 +239,48 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
     }
 
     /**
-     * 生成访问令牌
-     * TODO: 实际项目中需要使用JWT或其他Token生成方案
+     * 生成访问令牌（与 JeecgBoot 系统登录保持一致：username + password 作为 JWT 签名密钥）
      */
     private String generateToken(FdUser user) {
-        // 这里简化处理，实际项目应该使用JWT
-        return "token_" + user.getId() + "_" + System.currentTimeMillis();
+        return JwtUtil.sign(
+                resolveJwtUsername(user),
+                resolveJwtSecret(user),
+                CommonConstant.CLIENT_TYPE_APP
+        );
     }
 
     /**
-     * 生成刷新令牌
-     * TODO: 实际项目中需要使用JWT或其他Token生成方案
+     * 生成刷新令牌（有效期为 APP Token 的两倍）
      */
     private String generateRefreshToken(FdUser user) {
-        return "refreshToken_" + user.getId() + "_" + System.currentTimeMillis();
+        return JwtUtil.sign(
+                resolveJwtUsername(user),
+                resolveJwtSecret(user),
+                JwtUtil.APP_EXPIRE_TIME * 2
+        );
+    }
+
+    private String resolveJwtUsername(FdUser user) {
+        if (oConvertUtils.isNotEmpty(user.getUsername())) {
+            return user.getUsername();
+        }
+        if (oConvertUtils.isNotEmpty(user.getEmail())) {
+            return user.getEmail();
+        }
+        if (oConvertUtils.isNotEmpty(user.getPhone())) {
+            return user.getPhone();
+        }
+        return String.valueOf(user.getId());
+    }
+
+    /**
+     * JWT HMAC 密钥不能为空，JeecgBoot 约定使用库中存储的加密密码
+     */
+    private String resolveJwtSecret(FdUser user) {
+        if (oConvertUtils.isNotEmpty(user.getPassword())) {
+            return user.getPassword();
+        }
+        throw new JeecgBootException("用户凭证异常，无法生成 Token");
     }
 
     /**
