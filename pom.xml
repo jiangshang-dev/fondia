@@ -79,6 +79,7 @@
     <module>jeecg-module-system</module>
     <module>jeecg-boot-module</module>
     <module>jeecg-module-user</module>
+    <module>jeecg-module-cuisine</module>
   </modules>
   <repositories>
     <repository>
