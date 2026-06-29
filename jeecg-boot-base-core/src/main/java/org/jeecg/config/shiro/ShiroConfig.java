@@ -184,7 +184,16 @@ public class ShiroConfig {
         //filterChainDefinitionMap.put("/actuator/**", "anon");
         //测试模块排除
         filterChainDefinitionMap.put("/test/seata/**", "anon");
+
+        // app接口排除
         filterChainDefinitionMap.put("/user/auth/**", "anon");
+        filterChainDefinitionMap.put("/cuisine/category/**", "anon");
+        filterChainDefinitionMap.put("/cuisine/recipe/**", "anon");
+        filterChainDefinitionMap.put("/cuisine/tag/**", "anon");
+        filterChainDefinitionMap.put("/interaction/browse/**", "anon");
+        filterChainDefinitionMap.put("/interaction/collect/**", "anon");
+        filterChainDefinitionMap.put("/interaction/comment/**", "anon");
+        filterChainDefinitionMap.put("/interaction/like/**", "anon");
 
         //错误路径排除
         filterChainDefinitionMap.put("/error", "anon");
