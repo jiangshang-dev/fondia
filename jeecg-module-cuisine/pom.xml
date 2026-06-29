@@ -14,6 +14,7 @@
     <modules>
         <module>jeecg-module-cuisine-biz</module>
         <module>jeecg-module-cuisine-api</module>
+        <module>jeecg-module-cuisine-start</module>
     </modules>
 
     <properties>
