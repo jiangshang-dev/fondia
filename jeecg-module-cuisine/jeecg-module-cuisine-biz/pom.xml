@@ -10,6 +10,9 @@
     </parent>
 
     <artifactId>jeecg-module-cuisine-biz</artifactId>
+    <description>
+        餐谱业务模块
+    </description>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -21,6 +24,11 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecg.module.cuisine</groupId>
+            <artifactId>jeecg-module-cuisine-api</artifactId>
+            <version>3.9.2</version>
         </dependency>
         <dependency>
             <groupId>org.jeecgframework.boot3</groupId>
