@@ -187,6 +187,7 @@ public class ShiroConfig {
 
         // app接口排除
         filterChainDefinitionMap.put("/user/auth/**", "anon");
+        filterChainDefinitionMap.put("/user/public/**", "anon");
         filterChainDefinitionMap.put("/cuisine/category/**", "anon");
         filterChainDefinitionMap.put("/cuisine/recipe/**", "anon");
         filterChainDefinitionMap.put("/cuisine/tag/**", "anon");

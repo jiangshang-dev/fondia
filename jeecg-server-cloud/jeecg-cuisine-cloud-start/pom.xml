@@ -11,9 +11,7 @@
 
     <groupId>org.jeecg</groupId>
     <artifactId>jeecg-cuisine-cloud-start</artifactId>
-    <description>
-        餐谱服务启动器
-    </description>
+    <description>菜谱/菜品服务启动器</description>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -22,7 +20,6 @@
     </properties>
 
     <dependencies>
-        <!-- 引入jeecg-boot-starter-cloud依赖 -->
         <dependency>
             <groupId>org.jeecgframework.boot3</groupId>
             <artifactId>jeecg-boot-starter-cloud</artifactId>
@@ -32,11 +29,18 @@
             <artifactId>jeecg-boot-starter-job</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jeecgframework.boot3</groupId>
+            <groupId>org.jeecg</groupId>
             <artifactId>jeecg-module-cuisine-biz</artifactId>
             <version>3.9.2</version>
         </dependency>
     </dependencies>
 
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

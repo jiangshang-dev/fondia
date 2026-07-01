@@ -11,9 +11,10 @@
 
     <artifactId>jeecg-module-cuisine</artifactId>
     <packaging>pom</packaging>
+    <description>APP菜谱/菜品模块</description>
     <modules>
-        <module>jeecg-module-cuisine-biz</module>
         <module>jeecg-module-cuisine-api</module>
+        <module>jeecg-module-cuisine-biz</module>
         <module>jeecg-module-cuisine-start</module>
     </modules>
 

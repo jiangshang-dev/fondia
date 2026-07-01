@@ -23,6 +23,7 @@
         <module>jeecg-visual</module>
         <module>jeecg-user-cloud-start</module>
         <module>jeecg-cuisine-cloud-start</module>
+        <module>jeecg-interaction-cloud-start</module>
     </modules>
 
 </project>

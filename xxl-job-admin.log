@@ -1,0 +1,33 @@
+2026-06-07 10:47:21,181 INFO [main] c.x.job.admin.XxlJobAdminApplication [StartupInfoLogger.java : 53] Starting XxlJobAdminApplication using Java 21.0.10 with PID 16724 (/Users/xiaobai/Deveploer/workspace/company/lingxi/JeecgBoot/jeecg-boot/jeecg-server-cloud/jeecg-visual/jeecg-cloud-xxljob/target/classes started by xiaobai in /Users/xiaobai/Deveploer/workspace/company/lingxi/JeecgBoot/jeecg-boot)
+2026-06-07 10:47:21,182 INFO [main] c.x.job.admin.XxlJobAdminApplication [SpringApplication.java : 652] No active profile set, falling back to 1 default profile: "default"
+2026-06-07 10:47:21,753 INFO [main] o.s.b.w.e.tomcat.TomcatWebServer [TomcatWebServer.java : 111] Tomcat initialized with port 9080 (http)
+2026-06-07 10:47:21,759 INFO [main] o.a.coyote.http11.Http11NioProtocol [DirectJDKLog.java : 168] Initializing ProtocolHandler ["http-nio-9080"]
+2026-06-07 10:47:21,760 INFO [main] o.a.catalina.core.StandardService [DirectJDKLog.java : 168] Starting service [Tomcat]
+2026-06-07 10:47:21,760 INFO [main] o.a.catalina.core.StandardEngine [DirectJDKLog.java : 168] Starting Servlet engine: [Apache Tomcat/10.1.44]
+2026-06-07 10:47:21,780 INFO [main] o.a.c.c.C.[.[.[/xxl-job-admin] [DirectJDKLog.java : 168] Initializing Spring embedded WebApplicationContext
+2026-06-07 10:47:21,780 INFO [main] o.s.b.w.s.c.ServletWebServerApplicationContext [ServletWebServerApplicationContext.java : 301] Root WebApplicationContext: initialization completed in 507 ms
+2026-06-07 10:47:21,968 INFO [main] c.x.j.a.c.scheduler.XxlJobScheduler [XxlJobScheduler.java : 45] >>>>>>>>> init xxl-job admin success.
+2026-06-07 10:47:21,989 INFO [main] o.s.b.a.w.s.WelcomePageHandlerMapping [WelcomePageHandlerMapping.java : 59] Adding welcome page template: index
+2026-06-07 10:47:22,003 INFO [xxl-job, admin JobFailMonitorHelper] com.zaxxer.hikari.HikariDataSource [HikariDataSource.java : 109] HikariCP - Starting...
+2026-06-07 10:47:22,005 WARN [xxl-job, admin JobFailMonitorHelper] c.z.hikari.util.DriverDataSource [DriverDataSource.java : 75] Registered driver with driverClassName=com.mysql.jdbc.Driver was not found, trying direct instantiation.
+2026-06-07 10:47:22,206 INFO [main] o.s.b.a.e.web.EndpointLinksResolver [EndpointLinksResolver.java : 60] Exposing 1 endpoint beneath base path '/actuator'
+2026-06-07 10:47:22,236 INFO [main] o.a.coyote.http11.Http11NioProtocol [DirectJDKLog.java : 168] Starting ProtocolHandler ["http-nio-9080"]
+2026-06-07 10:47:22,243 INFO [main] o.a.c.c.C.[.[.[/xxl-job-admin] [DirectJDKLog.java : 168] Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-07 10:47:22,243 INFO [main] o.s.web.servlet.DispatcherServlet [FrameworkServlet.java : 532] Initializing Servlet 'dispatcherServlet'
+2026-06-07 10:47:22,244 INFO [main] o.s.web.servlet.DispatcherServlet [FrameworkServlet.java : 554] Completed initialization in 1 ms
+2026-06-07 10:47:22,245 INFO [main] o.s.b.w.e.tomcat.TomcatWebServer [TomcatWebServer.java : 243] Tomcat started on port 9080 (http) with context path '/xxl-job-admin'
+2026-06-07 10:47:22,253 INFO [main] c.x.job.admin.XxlJobAdminApplication [StartupInfoLogger.java : 59] Started XxlJobAdminApplication in 1.234 seconds (process running for 1.602)
+2026-06-07 10:47:22,257 INFO [main] c.x.job.admin.XxlJobAdminApplication [XxlJobAdminApplication.java : 21] 
+----------------------------------------------------------
+	Application XxlJobAdmin is running! Access URLs:
+	Local: 		http://localhost:9080/xxl-job-admin/
+	----------------------------------------------------------
+2026-06-07 10:47:22,411 INFO [xxl-job, admin JobFailMonitorHelper] com.zaxxer.hikari.pool.HikariPool [HikariPool.java : 580] HikariCP - Added connection com.mysql.cj.jdbc.ConnectionImpl@469653dd
+2026-06-07 10:47:22,416 INFO [xxl-job, admin JobFailMonitorHelper] com.zaxxer.hikari.HikariDataSource [HikariDataSource.java : 122] HikariCP - Start completed.
+2026-06-07 10:47:26,004 INFO [xxl-job, admin JobScheduleHelper#scheduleThread] c.x.j.a.c.thread.JobScheduleHelper [JobScheduleHelper.java : 52] >>>>>>>>> init xxl-job admin scheduler success.
+2026-06-07 10:47:26,016 WARN [xxl-job, admin JobScheduleHelper#scheduleThread] c.x.j.a.c.thread.JobScheduleHelper [JobScheduleHelper.java : 88] >>>>>>>>>>> xxl-job, schedule misfire, jobId = 1
+2026-06-07 10:47:26,018 WARN [xxl-job, admin JobScheduleHelper#scheduleThread] c.x.j.a.c.thread.JobScheduleHelper [JobScheduleHelper.java : 88] >>>>>>>>>>> xxl-job, schedule misfire, jobId = 2
+2026-06-07 10:47:26,139 INFO [http-nio-9080-exec-1] o.a.tomcat.util.http.parser.Cookie [DirectJDKLog.java : 168] A cookie header was received [Hm_lvt_a1ff8825baa73c3a78eb96aa40325abc=1779590521,1780126812;] that contained an invalid cookie. That cookie will be ignored.
+ Note: further occurrences of this error will be logged at DEBUG level.
+2026-06-07 12:45:59,336 INFO [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown [GracefulShutdown.java : 54] Commencing graceful shutdown. Waiting for active requests to complete
+2026-06-07 12:45:59,342 INFO [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown [GracefulShutdown.java : 76] Graceful shutdown complete

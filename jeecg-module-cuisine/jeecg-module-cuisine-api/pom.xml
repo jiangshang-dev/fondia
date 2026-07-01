@@ -9,7 +9,7 @@
         <version>3.9.2</version>
     </parent>
 
-    <groupId>org.jeecg.module.cuisine</groupId>
+    <groupId>org.jeecg</groupId>
     <artifactId>jeecg-module-cuisine-api</artifactId>
 
     <properties>
@@ -17,5 +17,12 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jeecgframework.boot3</groupId>
+            <artifactId>jeecg-boot-base-core</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

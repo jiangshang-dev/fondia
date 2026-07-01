@@ -9,7 +9,7 @@
         <version>3.9.2</version>
     </parent>
 
-    <groupId>org.jeecg.module.cuisine</groupId>
+    <groupId>org.jeecg</groupId>
     <artifactId>jeecg-module-cuisine-start</artifactId>
 
     <properties>
@@ -17,5 +17,26 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jeecg</groupId>
+            <artifactId>jeecg-module-cuisine-biz</artifactId>
+            <version>3.9.2</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
