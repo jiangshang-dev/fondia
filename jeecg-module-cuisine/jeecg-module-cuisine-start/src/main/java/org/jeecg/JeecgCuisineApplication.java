@@ -18,7 +18,7 @@ import java.util.Map;
 
 @Slf4j
 @SpringBootApplication(exclude = MongoAutoConfiguration.class)
-@MapperScan(basePackages = "org.jeecg.modules.cuisine.mapper")
+@MapperScan(basePackages = {"org.jeecg.modules.cuisine.mapper", "org.jeecg.modules.media.mapper"})
 public class JeecgCuisineApplication extends SpringBootServletInitializer {
 
     @Override

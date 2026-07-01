@@ -23,7 +23,7 @@ import java.net.UnknownHostException;
 
 @Slf4j
 @SpringBootApplication
-@MapperScan(basePackages = "org.jeecg.modules.cuisine.mapper")
+@MapperScan(basePackages = {"org.jeecg.modules.cuisine.mapper", "org.jeecg.modules.media.mapper"})
 @EnableScheduling
 @EnableAutoConfiguration(exclude = {MongoAutoConfiguration.class})
 public class JeecgCuisineCloudApplication extends SpringBootServletInitializer implements CommandLineRunner {

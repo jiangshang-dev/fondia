@@ -17,7 +17,8 @@
       "args": {
         "_genkey_0": "/sys/fd/recipe/**",
         "_genkey_1": "/sys/fd/recipeCategory/**",
-        "_genkey_2": "/sys/fd/recipeTag/**"
+        "_genkey_2": "/sys/fd/recipeTag/**",
+        "_genkey_3": "/sys/fd/banner/**"
       }
     }],
     "filters": [],

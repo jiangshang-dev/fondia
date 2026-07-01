@@ -40,5 +40,11 @@ INSERT INTO `sys_permission` VALUES ('2000100000000000052', '2000100000000000051
 INSERT INTO `sys_permission` VALUES ('2000100000000000053', '2000100000000000051', '隐藏评论', NULL, NULL, 0, NULL, NULL, 2, 'fondia:comment:hide', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
 INSERT INTO `sys_permission` VALUES ('2000100000000000054', '2000100000000000051', '删除评论', NULL, NULL, 0, NULL, NULL, 2, 'fondia:comment:delete', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
 
+-- 二级菜单：首页轮播图管理
+INSERT INTO `sys_permission` VALUES ('2000100000000000061', '2000100000000000001', '首页轮播图', '/fondia/cuisine/banner', 'fondia/cuisine/banner/index', 1, NULL, NULL, 1, NULL, '0', 3.50, 0, 'ant-design:picture-outlined', 0, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000062', '2000100000000000061', '新增轮播', NULL, NULL, 0, NULL, NULL, 2, 'fondia:banner:add', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000063', '2000100000000000061', '编辑轮播', NULL, NULL, 0, NULL, NULL, 2, 'fondia:banner:edit', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000064', '2000100000000000061', '删除轮播', NULL, NULL, 0, NULL, NULL, 2, 'fondia:banner:delete', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+
 -- 给 admin 角色授权（role_id 请按实际环境调整，默认 admin 角色 id 通常为 'f6817f48af4fb3af11b9e8bf182f966b'）
 -- INSERT INTO sys_role_permission (id, role_id, permission_id) SELECT UUID_SHORT(), 'f6817f48af4fb3af11b9e8bf182f966b', id FROM sys_permission WHERE id LIKE '2000100000000000%';

@@ -36,6 +36,12 @@ public class RecipeDetailVO {
     @Schema(description = "视频地址")
     private String videoUrl;
 
+    @Schema(description = "阿里云VOD视频ID（与 videoUrl 相同，便于客户端识别）")
+    private String videoId;
+
+    @Schema(description = "可播放的视频地址（由 videoId 解析）")
+    private String playUrl;
+
     @Schema(description = "视频时长(秒)")
     private Integer videoDuration;
 

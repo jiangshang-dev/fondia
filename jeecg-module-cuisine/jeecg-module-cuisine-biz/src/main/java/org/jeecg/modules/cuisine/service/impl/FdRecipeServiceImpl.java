@@ -46,6 +46,9 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
     @Resource
     private FdRecipeTagRelMapper tagRelMapper;
 
+    @Resource
+    private IRecipeVideoService recipeVideoService;
+
     @Override
     public IPage<RecipeListItemVO> pageRecipes(Long cuisineId, Long categoryId, Integer subType,
                                                Long tagId, String keyword,
@@ -66,13 +69,16 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
     public RecipeDetailVO getRecipeDetail(Long recipeId) {
         FdRecipe recipe = getEnabledRecipe(recipeId);
         FdRecipeCategory cuisine = categoryService.getById(recipe.getCuisineId());
+        String storedVideo = recipe.getVideoUrl();
         return RecipeDetailVO.builder()
                 .id(recipe.getId())
                 .title(recipe.getTitle())
                 .subtitle(recipe.getSubtitle())
                 .description(recipe.getDescription())
                 .coverImage(recipe.getCoverImage())
-                .videoUrl(recipe.getVideoUrl())
+                .videoUrl(storedVideo)
+                .videoId(storedVideo)
+                .playUrl(recipeVideoService.resolvePlayUrl(storedVideo))
                 .videoDuration(recipe.getVideoDuration())
                 .difficulty(recipe.getDifficulty())
                 .cookMinutes(recipe.getCookMinutes())
@@ -94,19 +100,22 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
 
     @Override
     public RecipeAdminDetailVO getRecipeAdminDetail(Long recipeId) {
-        FdRecipe recipe = getById(recipeId.toString());
+        FdRecipe recipe = getById(recipeId);
         if (recipe == null) {
             throw new JeecgBootException("菜谱不存在");
         }
         FdRecipeCategory cuisine = categoryService.getById(recipe.getCuisineId());
         FdRecipeCategory category = categoryService.getById(recipe.getCategoryId());
+        String storedVideo = recipe.getVideoUrl();
         RecipeAdminDetailVO detail = new RecipeAdminDetailVO();
         detail.setId(recipe.getId());
         detail.setTitle(recipe.getTitle());
         detail.setSubtitle(recipe.getSubtitle());
         detail.setDescription(recipe.getDescription());
         detail.setCoverImage(recipe.getCoverImage());
-        detail.setVideoUrl(recipe.getVideoUrl());
+        detail.setVideoUrl(storedVideo);
+        detail.setVideoId(storedVideo);
+        detail.setPlayUrl(recipeVideoService.resolvePlayUrl(storedVideo));
         detail.setVideoDuration(recipe.getVideoDuration());
         detail.setDifficulty(recipe.getDifficulty());
         detail.setCookMinutes(recipe.getCookMinutes());
