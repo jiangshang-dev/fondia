@@ -4,7 +4,7 @@
     "order": -10,
     "predicates": [{
       "name": "Path",
-      "args": { "_genkey_0": "/sys/fd/user/**" }
+      "args": { "_genkey_0": "/sys/fd/user/**", "_genkey_1": "/sys/fd/feedback/**" }
     }],
     "filters": [],
     "uri": "lb://jeecg-user"
