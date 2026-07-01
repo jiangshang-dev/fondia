@@ -14,7 +14,8 @@ import org.jeecg.common.system.base.controller.JeecgController;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.modules.cuisine.entity.FdRecipe;
 import org.jeecg.modules.cuisine.service.IFdRecipeService;
-import org.jeecg.modules.cuisine.vo.RecipeDetailVO;
+import org.jeecg.modules.cuisine.vo.RecipeAdminDetailVO;
+import org.jeecg.modules.cuisine.vo.RecipeAdminSaveDTO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -41,27 +42,25 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
         return Result.OK(service.page(page, queryWrapper));
     }
 
-    @Operation(summary = "菜谱详情（含步骤/食材/标签）")
+    @Operation(summary = "菜谱详情（含步骤/食材/标签，管理端）")
     @GetMapping("/queryById")
-    public Result<RecipeDetailVO> queryById(@RequestParam Long id) {
-        return Result.OK(service.getRecipeDetail(id));
+    public Result<RecipeAdminDetailVO> queryById(@RequestParam Long id) {
+        return Result.OK(service.getRecipeAdminDetail(id));
     }
 
     @AutoLog(value = "新增菜谱", operateType = CommonConstant.OPERATE_TYPE_2)
     @Operation(summary = "新增菜谱")
     @PostMapping("/add")
-    public Result<String> add(@RequestBody FdRecipe recipe) {
-        fillDefault(recipe, true);
-        service.save(recipe);
+    public Result<String> add(@RequestBody RecipeAdminSaveDTO recipe) {
+        service.saveRecipeAdmin(recipe, false);
         return Result.OK("添加成功");
     }
 
     @AutoLog(value = "编辑菜谱", operateType = CommonConstant.OPERATE_TYPE_3)
     @Operation(summary = "编辑菜谱")
     @RequestMapping(value = "/edit", method = {RequestMethod.PUT, RequestMethod.POST})
-    public Result<String> edit(@RequestBody FdRecipe recipe) {
-        fillDefault(recipe, false);
-        service.updateById(recipe);
+    public Result<String> edit(@RequestBody RecipeAdminSaveDTO recipe) {
+        service.saveRecipeAdmin(recipe, true);
         return Result.OK("编辑成功");
     }
 
@@ -96,37 +95,5 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
     public Result<String> deleteBatch(@RequestParam String ids) {
         service.removeByIds(Arrays.asList(ids.split(",")));
         return Result.OK("批量删除成功");
-    }
-
-    private void fillDefault(FdRecipe recipe, boolean isCreate) {
-        Date now = new Date();
-        if (isCreate && recipe.getCreateTime() == null) {
-            recipe.setCreateTime(now);
-        }
-        recipe.setUpdateTime(now);
-        if (recipe.getStatus() == null) {
-            recipe.setStatus(1);
-        }
-        if (recipe.getSortNo() == null) {
-            recipe.setSortNo(0);
-        }
-        if (recipe.getLikeCount() == null) {
-            recipe.setLikeCount(0);
-        }
-        if (recipe.getCollectCount() == null) {
-            recipe.setCollectCount(0);
-        }
-        if (recipe.getCommentCount() == null) {
-            recipe.setCommentCount(0);
-        }
-        if (recipe.getViewCount() == null) {
-            recipe.setViewCount(0);
-        }
-        if (recipe.getIsRecommend() == null) {
-            recipe.setIsRecommend(0);
-        }
-        if (isCreate && recipe.getStatus() == 1 && recipe.getPublishTime() == null) {
-            recipe.setPublishTime(now);
-        }
     }
 }

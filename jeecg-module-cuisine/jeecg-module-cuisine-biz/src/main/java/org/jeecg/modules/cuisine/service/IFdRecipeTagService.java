@@ -11,4 +11,6 @@ public interface IFdRecipeTagService extends IService<FdRecipeTag> {
     List<TagBriefVO> listEnabledTags(String tagType);
 
     List<String> listTagNamesByRecipeId(Long recipeId);
+
+    List<Long> listTagIdsByRecipeId(Long recipeId);
 }

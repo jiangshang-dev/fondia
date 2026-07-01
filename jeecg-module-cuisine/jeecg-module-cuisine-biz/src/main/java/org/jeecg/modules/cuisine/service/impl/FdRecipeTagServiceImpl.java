@@ -53,4 +53,13 @@ public class FdRecipeTagServiceImpl extends ServiceImpl<FdRecipeTagMapper, FdRec
                 .collect(Collectors.toMap(FdRecipeTag::getId, FdRecipeTag::getName, (a, b) -> a));
         return tagIds.stream().map(tagNameMap::get).filter(StringUtils::hasText).collect(Collectors.toList());
     }
+
+    @Override
+    public List<Long> listTagIdsByRecipeId(Long recipeId) {
+        LambdaQueryWrapper<FdRecipeTagRel> relWrapper = new LambdaQueryWrapper<>();
+        relWrapper.eq(FdRecipeTagRel::getRecipeId, recipeId);
+        return tagRelMapper.selectList(relWrapper).stream()
+                .map(FdRecipeTagRel::getTagId)
+                .collect(Collectors.toList());
+    }
 }

@@ -3,6 +3,8 @@ package org.jeecg.modules.cuisine.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.jeecg.modules.cuisine.entity.FdRecipe;
+import org.jeecg.modules.cuisine.vo.RecipeAdminDetailVO;
+import org.jeecg.modules.cuisine.vo.RecipeAdminSaveDTO;
 import org.jeecg.modules.cuisine.vo.RecipeDetailVO;
 import org.jeecg.modules.cuisine.vo.RecipeListItemVO;
 
@@ -17,6 +19,10 @@ public interface IFdRecipeService extends IService<FdRecipe> {
     List<RecipeListItemVO> listByCategoryId(Long categoryId, Integer limit);
 
     RecipeDetailVO getRecipeDetail(Long recipeId);
+
+    RecipeAdminDetailVO getRecipeAdminDetail(Long recipeId);
+
+    Long saveRecipeAdmin(RecipeAdminSaveDTO dto, boolean isUpdate);
 
     void incrementViewCount(Long recipeId);
 }
