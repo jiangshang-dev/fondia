@@ -9,5 +9,7 @@ public interface IFdRecipeCollectService extends IService<FdRecipeCollect> {
 
     ToggleResultVO toggleCollect(Long recipeId, Long userId);
 
+    boolean isCollected(Long recipeId, Long userId);
+
     IPage<FdRecipeCollect> pageMyCollects(Long userId, Integer pageNo, Integer pageSize);
 }

@@ -57,6 +57,30 @@ public class UserInfoVO {
     @Schema(description = "厨艺等级")
     private Integer cookingLevel;
 
+    @Schema(description = "口味偏好")
+    private String tastePreference;
+
+    @Schema(description = "饮食偏好")
+    private String dietaryPreference;
+
+    @Schema(description = "消息通知 1开 0关")
+    private Integer notifyEnabled;
+
+    @Schema(description = "参与活动 1开 0关")
+    private Integer activityEnabled;
+
+    @Schema(description = "成长值")
+    private Integer growthValue;
+
+    @Schema(description = "积分")
+    private Integer points;
+
+    @Schema(description = "连续签到天数")
+    private Integer checkInDays;
+
+    @Schema(description = "账号是否已保护（手机号或邮箱已绑定）")
+    private Boolean accountProtected;
+
     @Schema(description = "账号状态")
     private Integer status;
 }

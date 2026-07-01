@@ -1,11 +1,13 @@
 package org.jeecg.modules.interaction.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.interaction.dto.RecipeInteractionDTO;
+import org.jeecg.modules.interaction.entity.FdRecipeLike;
 import org.jeecg.modules.interaction.service.IFdRecipeLikeService;
 import org.jeecg.modules.interaction.util.InteractionAuthHelper;
 import org.jeecg.modules.interaction.vo.ToggleResultVO;
@@ -38,5 +40,14 @@ public class RecipeLikeController {
                                   @RequestParam Long recipeId) {
         Long userId = authHelper.resolveUserId(authorization);
         return Result.ok(likeService.isLiked(recipeId, userId));
+    }
+
+    @Operation(summary = "我的点赞列表")
+    @GetMapping("/my")
+    public Result<IPage<FdRecipeLike>> myLikes(@RequestHeader("Authorization") String authorization,
+                                              @RequestParam(defaultValue = "1") Integer pageNo,
+                                              @RequestParam(defaultValue = "10") Integer pageSize) {
+        Long userId = authHelper.resolveUserId(authorization);
+        return Result.ok(likeService.pageMyLikes(userId, pageNo, pageSize));
     }
 }

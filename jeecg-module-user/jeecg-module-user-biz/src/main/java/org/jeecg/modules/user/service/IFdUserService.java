@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
+import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
 import org.jeecg.modules.user.entity.FdUser;
 import org.jeecg.modules.user.vo.LoginResultVO;
 import org.jeecg.modules.user.vo.UserInfoVO;
@@ -55,4 +56,9 @@ public interface IFdUserService extends IService<FdUser> {
      * 根据 Token 获取当前登录用户信息
      */
     UserInfoVO getUserInfo(String authorization);
+
+    /**
+     * 更新当前用户资料
+     */
+    UserInfoVO updateUserProfile(String authorization, UpdateUserProfileDTO dto);
 }

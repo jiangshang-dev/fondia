@@ -13,6 +13,7 @@ import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
+import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
 import org.jeecg.modules.user.entity.FdUser;
 import org.jeecg.modules.user.entity.FdUserAuth;
 import org.jeecg.modules.user.handler.ThirdPartyLoginHandler;
@@ -256,6 +257,66 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         return convertToUserInfoVO(user);
     }
 
+    @Override
+    public UserInfoVO updateUserProfile(String authorization, UpdateUserProfileDTO dto) {
+        String token = extractBearerToken(authorization);
+        if (oConvertUtils.isEmpty(token)) {
+            throw new JeecgBootException("Token不能为空");
+        }
+
+        String username = JwtUtil.getUsername(token);
+        FdUser user = resolveUserFromJwtUsername(username);
+        if (user == null) {
+            throw new JeecgBootException("用户不存在");
+        }
+        if (!JwtUtil.verify(token, username, user.getPassword())) {
+            throw new JeecgBootException("Token无效或已过期");
+        }
+
+        if (dto.getNickname() != null) {
+            user.setNickname(dto.getNickname());
+        }
+        if (dto.getAvatar() != null) {
+            user.setAvatar(dto.getAvatar());
+        }
+        if (dto.getGender() != null) {
+            user.setGender(dto.getGender());
+        }
+        if (dto.getBirthday() != null) {
+            user.setBirthday(dto.getBirthday());
+        }
+        if (dto.getProvince() != null) {
+            user.setProvince(dto.getProvince());
+        }
+        if (dto.getCity() != null) {
+            user.setCity(dto.getCity());
+        }
+        if (dto.getDistrict() != null) {
+            user.setDistrict(dto.getDistrict());
+        }
+        if (dto.getSign() != null) {
+            user.setSign(dto.getSign());
+        }
+        if (dto.getCookingLevel() != null) {
+            user.setCookingLevel(dto.getCookingLevel());
+        }
+        if (dto.getTastePreference() != null) {
+            user.setTastePreference(dto.getTastePreference());
+        }
+        if (dto.getDietaryPreference() != null) {
+            user.setDietaryPreference(dto.getDietaryPreference());
+        }
+        if (dto.getNotifyEnabled() != null) {
+            user.setNotifyEnabled(dto.getNotifyEnabled());
+        }
+        if (dto.getActivityEnabled() != null) {
+            user.setActivityEnabled(dto.getActivityEnabled());
+        }
+        user.setUpdateTime(System.currentTimeMillis());
+        updateById(user);
+        return convertToUserInfoVO(user);
+    }
+
     /**
      * 解析 Authorization 请求头，支持 Bearer 前缀
      */
@@ -346,6 +407,27 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
     private UserInfoVO convertToUserInfoVO(FdUser user) {
         UserInfoVO userInfoVO = new UserInfoVO();
         BeanUtils.copyProperties(user, userInfoVO);
+        boolean protectedAccount = oConvertUtils.isNotEmpty(user.getPhone())
+                || oConvertUtils.isNotEmpty(user.getEmail());
+        userInfoVO.setAccountProtected(protectedAccount);
+        if (userInfoVO.getGrowthValue() == null) {
+            userInfoVO.setGrowthValue(0);
+        }
+        if (userInfoVO.getPoints() == null) {
+            userInfoVO.setPoints(0);
+        }
+        if (userInfoVO.getCheckInDays() == null) {
+            userInfoVO.setCheckInDays(0);
+        }
+        if (userInfoVO.getNotifyEnabled() == null) {
+            userInfoVO.setNotifyEnabled(1);
+        }
+        if (userInfoVO.getActivityEnabled() == null) {
+            userInfoVO.setActivityEnabled(1);
+        }
+        if (userInfoVO.getCookingLevel() == null) {
+            userInfoVO.setCookingLevel(1);
+        }
         return userInfoVO;
     }
 }

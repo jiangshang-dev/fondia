@@ -83,6 +83,34 @@ public class FdUser implements Serializable {
     @Schema(description = "厨艺等级 (如 1:初学者, 4:厨艺达人)")
     private Integer cookingLevel;
 
+    /**口味偏好*/
+    @Schema(description = "口味偏好")
+    private String tastePreference;
+
+    /**饮食偏好*/
+    @Schema(description = "饮食偏好")
+    private String dietaryPreference;
+
+    /**消息通知 1开 0关*/
+    @Schema(description = "消息通知 1开 0关")
+    private Integer notifyEnabled;
+
+    /**参与活动 1开 0关*/
+    @Schema(description = "参与活动 1开 0关")
+    private Integer activityEnabled;
+
+    /**成长值*/
+    @Schema(description = "成长值")
+    private Integer growthValue;
+
+    /**积分*/
+    @Schema(description = "积分")
+    private Integer points;
+
+    /**连续签到天数*/
+    @Schema(description = "连续签到天数")
+    private Integer checkInDays;
+
     /**账号状态 (1:正常, 0:禁用, -1:已注销)*/
     @Schema(description = "账号状态 (1:正常, 0:禁用, -1:已注销)")
     private Integer status;

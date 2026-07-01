@@ -14,6 +14,13 @@ CREATE TABLE IF NOT EXISTS `fd_user` (
     `district` varchar(500) DEFAULT NULL COMMENT '居住区/县',
     `sign` varchar(500) DEFAULT NULL COMMENT '个性签名',
     `cooking_level` tinyint DEFAULT NULL COMMENT '厨艺等级 (如 1:初学者, 4:厨艺达人)',
+    `taste_preference` varchar(200) DEFAULT NULL COMMENT '口味偏好',
+    `dietary_preference` varchar(200) DEFAULT NULL COMMENT '饮食偏好',
+    `notify_enabled` tinyint DEFAULT 1 COMMENT '消息通知 1开 0关',
+    `activity_enabled` tinyint DEFAULT 1 COMMENT '参与活动 1开 0关',
+    `growth_value` int DEFAULT 0 COMMENT '成长值',
+    `points` int DEFAULT 0 COMMENT '积分',
+    `check_in_days` int DEFAULT 0 COMMENT '连续签到天数',
     `status` tinyint DEFAULT NULL COMMENT '账号状态 (1:正常, 0:禁用, -1:已注销)',
     `create_user` int DEFAULT NULL COMMENT '创建用户',
     `create_time` bigint DEFAULT NULL COMMENT '创建时间',
@@ -21,6 +28,15 @@ CREATE TABLE IF NOT EXISTS `fd_user` (
     `update_time` bigint DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='App用户表';
+
+-- 用户资料扩展字段（已建表可单独执行）
+-- ALTER TABLE fd_user ADD COLUMN taste_preference varchar(200) DEFAULT NULL COMMENT '口味偏好';
+-- ALTER TABLE fd_user ADD COLUMN dietary_preference varchar(200) DEFAULT NULL COMMENT '饮食偏好';
+-- ALTER TABLE fd_user ADD COLUMN notify_enabled tinyint DEFAULT 1 COMMENT '消息通知 1开 0关';
+-- ALTER TABLE fd_user ADD COLUMN activity_enabled tinyint DEFAULT 1 COMMENT '参与活动 1开 0关';
+-- ALTER TABLE fd_user ADD COLUMN growth_value int DEFAULT 0 COMMENT '成长值';
+-- ALTER TABLE fd_user ADD COLUMN points int DEFAULT 0 COMMENT '积分';
+-- ALTER TABLE fd_user ADD COLUMN check_in_days int DEFAULT 0 COMMENT '连续签到天数';
 
 -- App用户第三方登录授权表
 CREATE TABLE IF NOT EXISTS `fd_user_auth` (

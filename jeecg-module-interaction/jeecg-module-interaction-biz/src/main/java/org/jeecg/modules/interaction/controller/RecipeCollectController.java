@@ -34,6 +34,14 @@ public class RecipeCollectController {
         return Result.ok(collectService.toggleCollect(dto.getRecipeId(), userId));
     }
 
+    @Operation(summary = "是否已收藏")
+    @GetMapping("/status")
+    public Result<Boolean> status(@RequestHeader("Authorization") String authorization,
+                                  @RequestParam Long recipeId) {
+        Long userId = authHelper.resolveUserId(authorization);
+        return Result.ok(collectService.isCollected(recipeId, userId));
+    }
+
     @Operation(summary = "我的收藏列表")
     @GetMapping("/my")
     public Result<IPage<FdRecipeCollect>> myCollects(@RequestHeader("Authorization") String authorization,
