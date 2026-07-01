@@ -1,19 +1,16 @@
 package org.jeecg.modules.cuisine.admin.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.aspect.annotation.AutoLog;
 import org.jeecg.common.constant.CommonConstant;
 import org.jeecg.common.system.base.controller.JeecgController;
-import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.modules.cuisine.entity.FdRecipeCategory;
 import org.jeecg.modules.cuisine.service.IFdRecipeCategoryService;
+import org.jeecg.modules.cuisine.vo.CategoryAdminTreeVO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -29,24 +26,22 @@ import java.util.List;
 @RequestMapping("/sys/fd/recipeCategory")
 public class FdRecipeCategoryAdminController extends JeecgController<FdRecipeCategory, IFdRecipeCategoryService> {
 
-    @Operation(summary = "分类分页列表")
+    @Operation(summary = "分类树形列表")
     @GetMapping("/list")
-    public Result<IPage<FdRecipeCategory>> list(FdRecipeCategory category,
-                                                  @RequestParam(name = "pageNo", defaultValue = "1") Integer pageNo,
-                                                  @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
-                                                  HttpServletRequest req) {
-        QueryWrapper<FdRecipeCategory> queryWrapper = QueryGenerator.initQueryWrapper(category, req.getParameterMap());
-        queryWrapper.orderByAsc("sort_no").orderByDesc("create_time");
-        Page<FdRecipeCategory> page = new Page<>(pageNo, pageSize);
-        return Result.OK(service.page(page, queryWrapper));
+    public Result<List<CategoryAdminTreeVO>> list(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Integer categoryLevel,
+            @RequestParam(required = false) Integer status) {
+        return Result.OK(service.listAdminTree(name, categoryLevel, status));
     }
 
     @Operation(summary = "分类树形列表")
     @GetMapping("/tree")
-    public Result<List<FdRecipeCategory>> tree() {
-        QueryWrapper<FdRecipeCategory> wrapper = new QueryWrapper<>();
-        wrapper.orderByAsc("sort_no");
-        return Result.OK(service.list(wrapper));
+    public Result<List<CategoryAdminTreeVO>> tree(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Integer categoryLevel,
+            @RequestParam(required = false) Integer status) {
+        return Result.OK(service.listAdminTree(name, categoryLevel, status));
     }
 
     @Operation(summary = "分类详情")
@@ -103,6 +98,9 @@ public class FdRecipeCategoryAdminController extends JeecgController<FdRecipeCat
         }
         if (category.getSortNo() == null) {
             category.setSortNo(0);
+        }
+        if (category.getCategoryLevel() == null) {
+            category.setCategoryLevel(category.getParentId() != null && category.getParentId() > 0 ? 2 : 1);
         }
     }
 }

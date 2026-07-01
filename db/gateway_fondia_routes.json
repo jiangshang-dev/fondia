@@ -1,0 +1,36 @@
+[
+  {
+    "id": "jeecg-fondia-user-admin",
+    "order": -10,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/sys/fd/user/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-user"
+  },
+  {
+    "id": "jeecg-fondia-cuisine-admin",
+    "order": -9,
+    "predicates": [{
+      "name": "Path",
+      "args": {
+        "_genkey_0": "/sys/fd/recipe/**",
+        "_genkey_1": "/sys/fd/recipeCategory/**",
+        "_genkey_2": "/sys/fd/recipeTag/**"
+      }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-cuisine"
+  },
+  {
+    "id": "jeecg-fondia-interaction-admin",
+    "order": -8,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/sys/fd/comment/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-interaction"
+  }
+]

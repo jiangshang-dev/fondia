@@ -65,7 +65,6 @@ public class AppFileController {
         try {
             SsrfFileTypeFilter.checkUploadFileType(file, bizPath);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new JeecgBootException("上传文件类型错误");
         }
 
