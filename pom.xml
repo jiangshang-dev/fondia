@@ -81,8 +81,8 @@
     <module>jeecg-module-user</module>
     <module>jeecg-module-cuisine</module>
     <module>jeecg-module-interaction</module>
-      <module>jeecg-module-support</module>
-    <module>jeecg-server-cloud/jeecg-support-cloud-start</module>
+    <module>jeecg-module-support</module>
+    <module>jeecg-module-search</module>
   </modules>
   <repositories>
     <repository>
@@ -114,6 +114,13 @@
     </repository>
   </repositories>
   <dependencies>
+    <!-- Source: https://mvnrepository.com/artifact/org.jeecgframework.boot/jeecg-boot-starter-rabbitmq -->
+    <dependency>
+      <groupId>org.jeecgframework.boot</groupId>
+      <artifactId>jeecg-boot-starter-rabbitmq</artifactId>
+      <version>3.8.3</version>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>

@@ -1,9 +1,12 @@
 package org.jeecg.modules.cuisine.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.jeecg.boot.starter.rabbitmq.client.RabbitMqClient;
+import org.jeecg.common.constant.RabbitConstant;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.cuisine.entity.FdRecipe;
@@ -48,6 +51,9 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
 
     @Resource
     private IRecipeVideoService recipeVideoService;
+
+    @Resource
+    private RabbitMqClient rabbitMqClient;
 
     @Override
     public IPage<RecipeListItemVO> pageRecipes(Long cuisineId, Long categoryId, Integer subType,
@@ -192,6 +198,8 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
         saveIngredients(recipeId, dto.getIngredients(), now);
         saveSteps(recipeId, dto.getSteps(), now);
         saveTagRelations(recipeId, dto.getTagIds(), now);
+        // todo 发布消息通知其他服务
+        rabbitMqClient.sendMessage(RabbitConstant.SAVE_RECIPE, JSONUtil.toJsonStr(recipe));
         return recipeId;
     }
 
