@@ -52,5 +52,12 @@ INSERT INTO `sys_permission` VALUES ('2000100000000000072', '2000100000000000071
 INSERT INTO `sys_permission` VALUES ('2000100000000000073', '2000100000000000071', '标记处理', NULL, NULL, 0, NULL, NULL, 2, 'fondia:feedback:status', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
 INSERT INTO `sys_permission` VALUES ('2000100000000000074', '2000100000000000071', '删除反馈', NULL, NULL, 0, NULL, NULL, 2, 'fondia:feedback:delete', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
 
+-- 二级菜单：在线客服
+INSERT INTO `sys_permission` VALUES ('2000100000000000080', '2000100000000000001', '在线客服', '/fondia/support', 'layouts/default/index', 1, NULL, '/fondia/support/config', 0, NULL, '0', 6.00, 0, 'ant-design:customer-service-outlined', 0, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000081', '2000100000000000080', '客服配置', '/fondia/support/config', 'fondia/support/config/index', 1, NULL, NULL, 1, NULL, '0', 1.00, 0, 'ant-design:setting-outlined', 1, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000082', '2000100000000000080', 'FAQ管理', '/fondia/support/faq', 'fondia/support/faq/index', 1, NULL, NULL, 1, NULL, '0', 2.00, 0, 'ant-design:question-circle-outlined', 1, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000083', '2000100000000000080', '快捷入口', '/fondia/support/quickEntry', 'fondia/support/quickEntry/index', 1, NULL, NULL, 1, NULL, '0', 3.00, 0, 'ant-design:appstore-outlined', 1, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000084', '2000100000000000080', '客服工作台', '/fondia/support/workbench', 'fondia/support/workbench/index', 1, NULL, NULL, 1, NULL, '0', 4.00, 0, 'ant-design:message-outlined', 1, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+
 -- 给 admin 角色授权
 -- INSERT INTO sys_role_permission (id, role_id, permission_id) SELECT UUID_SHORT(), 'f6817f48af4fb3af11b9e8bf182f966b', id FROM sys_permission WHERE id LIKE '2000100000000000%';

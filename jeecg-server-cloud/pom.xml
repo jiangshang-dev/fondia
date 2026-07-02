@@ -24,6 +24,8 @@
         <module>jeecg-user-cloud-start</module>
         <module>jeecg-cuisine-cloud-start</module>
         <module>jeecg-interaction-cloud-start</module>
+        <module>jeecg-search-cloud-start</module>
+        <module>jeecg-support-cloud-start</module>
     </modules>
 
 </project>

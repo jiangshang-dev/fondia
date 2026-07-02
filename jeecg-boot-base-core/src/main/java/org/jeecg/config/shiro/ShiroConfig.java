@@ -200,6 +200,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/interaction/like/**", "anon");
         filterChainDefinitionMap.put("/cuisine/banner/**", "anon");
         filterChainDefinitionMap.put("/user/feedback/**", "anon");
+        filterChainDefinitionMap.put("/support/session/transfer/**", "anon");
 
         //错误路径排除
         filterChainDefinitionMap.put("/error", "anon");

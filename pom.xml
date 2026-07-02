@@ -81,6 +81,8 @@
     <module>jeecg-module-user</module>
     <module>jeecg-module-cuisine</module>
     <module>jeecg-module-interaction</module>
+      <module>jeecg-module-support</module>
+    <module>jeecg-server-cloud/jeecg-support-cloud-start</module>
   </modules>
   <repositories>
     <repository>

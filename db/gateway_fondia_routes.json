@@ -33,5 +33,35 @@
     }],
     "filters": [],
     "uri": "lb://jeecg-interaction"
+  },
+  {
+    "id": "jeecg-fondia-support-app",
+    "order": -7,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/support/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-support"
+  },
+  {
+    "id": "jeecg-fondia-support-admin",
+    "order": -6,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/sys/fd/cs/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-support"
+  },
+  {
+    "id": "jeecg-fondia-support-ws",
+    "order": -5,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/ws/cs/**" }
+    }],
+    "filters": [],
+    "uri": "lb:ws://jeecg-support"
   }
 ]
