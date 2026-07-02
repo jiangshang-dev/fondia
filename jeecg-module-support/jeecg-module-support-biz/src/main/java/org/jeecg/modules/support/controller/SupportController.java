@@ -6,6 +6,7 @@ import jakarta.annotation.Resource;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.config.shiro.IgnoreAuth;
 import org.jeecg.modules.support.dto.AiChatDTO;
+import org.jeecg.modules.support.dto.SendMessageDTO;
 import org.jeecg.modules.support.dto.SessionCreateDTO;
 import org.jeecg.modules.support.entity.FdCsFaq;
 import org.jeecg.modules.support.entity.FdCsQuickEntry;
@@ -87,6 +88,14 @@ public class SupportController {
                                                 @RequestParam(defaultValue = "1") Integer pageNo,
                                                 @RequestParam(defaultValue = "50") Integer pageSize) {
         return Result.OK(sessionService.listMessages(authorization, id, pageNo, pageSize));
+    }
+
+    @Operation(summary = "用户发送人工客服消息")
+    @PostMapping("/session/{id}/message")
+    public Result<CsMessageVO> sendMessage(@RequestHeader("Authorization") String authorization,
+                                           @PathVariable("id") Long id,
+                                           @Validated @RequestBody SendMessageDTO dto) {
+        return Result.OK(sessionService.sendUserMessage(authorization, id, dto));
     }
 
     @Operation(summary = "关闭会话")

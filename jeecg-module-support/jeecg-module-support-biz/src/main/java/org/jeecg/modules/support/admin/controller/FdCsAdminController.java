@@ -5,14 +5,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.aspect.annotation.AutoLog;
 import org.jeecg.common.constant.CommonConstant;
+import org.jeecg.common.system.vo.LoginUser;
+import org.jeecg.modules.support.dto.SendMessageDTO;
 import org.jeecg.modules.support.entity.FdCsConfig;
 import org.jeecg.modules.support.entity.FdCsSession;
 import org.jeecg.modules.support.service.IFdCsConfigService;
 import org.jeecg.modules.support.service.IFdCsSessionService;
 import org.jeecg.modules.support.vo.CsMessageVO;
+import org.jeecg.modules.support.vo.CsSessionAdminVO;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,10 +49,19 @@ public class FdCsAdminController {
 
     @Operation(summary = "会话分页列表")
     @GetMapping("/session/list")
-    public Result<IPage<FdCsSession>> sessionList(FdCsSession query,
-                                                  @RequestParam(defaultValue = "1") Integer pageNo,
-                                                  @RequestParam(defaultValue = "10") Integer pageSize) {
+    public Result<IPage<CsSessionAdminVO>> sessionList(FdCsSession query,
+                                                       @RequestParam(defaultValue = "1") Integer pageNo,
+                                                       @RequestParam(defaultValue = "10") Integer pageSize) {
         return Result.OK(sessionService.pageForAdmin(query, pageNo, pageSize));
+    }
+
+    @AutoLog(value = "客服发送消息", operateType = CommonConstant.OPERATE_TYPE_3)
+    @Operation(summary = "客服发送消息")
+    @PostMapping("/session/sendMessage")
+    public Result<CsMessageVO> sendMessage(@RequestParam String sessionId,
+                                           @Validated @RequestBody SendMessageDTO dto) {
+        LoginUser loginUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+        return Result.OK(sessionService.sendAgentMessage(Long.parseLong(sessionId), loginUser.getId(), dto));
     }
 
     @AutoLog(value = "客服接入会话", operateType = CommonConstant.OPERATE_TYPE_3)
@@ -66,14 +80,14 @@ public class FdCsAdminController {
 
     @Operation(summary = "会话消息列表")
     @GetMapping("/session/messages")
-    public Result<List<CsMessageVO>> messages(@RequestParam Long sessionId,
+    public Result<List<CsMessageVO>> messages(@RequestParam String sessionId,
                                               @RequestParam(defaultValue = "1") Integer pageNo,
                                               @RequestParam(defaultValue = "100") Integer pageSize) {
-        // 管理端不做用户校验，agent已登录
-        FdCsSession session = sessionService.getById(sessionId);
+        Long sid = Long.parseLong(sessionId);
+        FdCsSession session = sessionService.getById(sid);
         if (session == null) {
             return Result.error("会话不存在");
         }
-        return Result.OK(sessionService.listMessagesForAdmin(sessionId, pageNo, pageSize));
+        return Result.OK(sessionService.listMessagesForAdmin(sid, pageNo, pageSize));
     }
 }

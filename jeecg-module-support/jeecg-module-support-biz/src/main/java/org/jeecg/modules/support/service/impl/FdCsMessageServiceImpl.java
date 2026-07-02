@@ -37,22 +37,39 @@ public class FdCsMessageServiceImpl implements IFdCsMessageService {
     }
 
     @Override
+    public void pushToAllAgents(FdCsMessage message, Long sessionId) {
+        CsWebSocketEndpoint.broadcastToAgents(buildNotifyEnvelope(message, sessionId));
+    }
+
+    @Override
     public void pushToUser(FdCsMessage message, Long sessionId) {
         CsWebSocketEndpoint.sendToSession(String.valueOf(sessionId), buildPushEnvelope(message));
     }
 
-    private String buildPushEnvelope(FdCsMessage message) {
+    private String buildNotifyEnvelope(FdCsMessage message, Long sessionId) {
+        Map<String, Object> envelope = new HashMap<>();
+        envelope.put("cmd", "SESSION_NOTIFY");
+        envelope.put("sessionId", String.valueOf(sessionId));
+        envelope.put("data", buildMessageData(message));
+        envelope.put("timestamp", System.currentTimeMillis());
+        return JSON.toJSONString(envelope);
+    }
+
+    private Map<String, Object> buildMessageData(FdCsMessage message) {
         Map<String, Object> data = new HashMap<>();
         data.put("id", String.valueOf(message.getId()));
         data.put("senderType", message.getSenderType());
         data.put("msgType", message.getMsgType());
         data.put("content", message.getContent());
         data.put("createTime", message.getCreateTime());
+        return data;
+    }
 
+    private String buildPushEnvelope(FdCsMessage message) {
         Map<String, Object> envelope = new HashMap<>();
         envelope.put("cmd", "CHAT_PUSH");
         envelope.put("sessionId", String.valueOf(message.getSessionId()));
-        envelope.put("data", data);
+        envelope.put("data", buildMessageData(message));
         envelope.put("timestamp", System.currentTimeMillis());
         return JSON.toJSONString(envelope);
     }

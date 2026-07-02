@@ -8,5 +8,7 @@ public interface IFdCsMessageService {
 
     void pushToAgent(FdCsMessage message, String agentId);
 
+    void pushToAllAgents(FdCsMessage message, Long sessionId);
+
     void pushToUser(FdCsMessage message, Long sessionId);
 }

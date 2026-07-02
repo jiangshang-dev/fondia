@@ -10,6 +10,7 @@ import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.support.client.CsUserFeignClient;
 import org.jeecg.modules.support.dto.AiChatDTO;
+import org.jeecg.modules.support.dto.SendMessageDTO;
 import org.jeecg.modules.support.dto.SessionCreateDTO;
 import org.jeecg.modules.support.entity.FdCsConfig;
 import org.jeecg.modules.support.entity.FdCsMessage;
@@ -24,6 +25,7 @@ import org.jeecg.modules.support.service.IFdCsMessageService;
 import org.jeecg.modules.support.service.IFdCsSessionService;
 import org.jeecg.modules.support.vo.AiChatVO;
 import org.jeecg.modules.support.vo.CsMessageVO;
+import org.jeecg.modules.support.vo.CsSessionAdminVO;
 import org.jeecg.modules.support.vo.CsSessionVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -169,6 +171,58 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public CsMessageVO sendUserMessage(String authorization, Long sessionId, SendMessageDTO dto) {
+        Long userId = resolveUserId(authorization);
+        FdCsSession session = getById(sessionId);
+        if (session == null || !userId.equals(session.getUserId())) {
+            throw new JeecgBootException("会话不存在");
+        }
+        if (CsSessionStatus.CLOSED.equals(session.getStatus())) {
+            throw new JeecgBootException("会话已关闭");
+        }
+        return saveAndDispatchUserMessage(session, userId, dto.getContent(), dto.getClientMsgId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CsMessageVO sendAgentMessage(Long sessionId, String agentId, SendMessageDTO dto) {
+        FdCsSession session = getById(sessionId);
+        if (session == null) {
+            throw new JeecgBootException("会话不存在");
+        }
+        if (CsSessionStatus.CLOSED.equals(session.getStatus())) {
+            throw new JeecgBootException("会话已关闭");
+        }
+        if (session.getAgentId() == null) {
+            session.setAgentId(agentId);
+        }
+        session.setStatus(CsSessionStatus.CHATTING);
+        FdCsMessage saved = messageService.saveMessage(
+                sessionId, CsSenderType.AGENT, agentId, dto.getContent(), dto.getClientMsgId());
+        session.setLastMessage(trimSummary(dto.getContent()));
+        session.setLastMessageTime(System.currentTimeMillis());
+        updateById(session);
+        messageService.pushToUser(saved, sessionId);
+        return toMessageVO(saved);
+    }
+
+    private CsMessageVO saveAndDispatchUserMessage(FdCsSession session, Long userId, String content, String clientMsgId) {
+        FdCsMessage saved = messageService.saveMessage(
+                session.getId(), CsSenderType.USER, String.valueOf(userId), content, clientMsgId);
+        session.setLastMessage(trimSummary(content));
+        session.setLastMessageTime(System.currentTimeMillis());
+        if (session.getAgentId() != null) {
+            session.setAgentUnread((session.getAgentUnread() == null ? 0 : session.getAgentUnread()) + 1);
+            messageService.pushToAgent(saved, session.getAgentId());
+        } else {
+            messageService.pushToAllAgents(saved, session.getId());
+        }
+        updateById(session);
+        return toMessageVO(saved);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void closeSession(String authorization, Long sessionId) {
         Long userId = resolveUserId(authorization);
         FdCsSession session = getById(sessionId);
@@ -181,7 +235,7 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
     }
 
     @Override
-    public IPage<FdCsSession> pageForAdmin(FdCsSession query, Integer pageNo, Integer pageSize) {
+    public IPage<CsSessionAdminVO> pageForAdmin(FdCsSession query, Integer pageNo, Integer pageSize) {
         LambdaQueryWrapper<FdCsSession> wrapper = new LambdaQueryWrapper<>();
         if (query != null) {
             if (oConvertUtils.isNotEmpty(query.getStatus())) {
@@ -192,7 +246,24 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
             }
         }
         wrapper.orderByDesc(FdCsSession::getLastMessageTime).orderByDesc(FdCsSession::getCreateTime);
-        return page(new Page<>(pageNo, pageSize), wrapper);
+        IPage<FdCsSession> page = page(new Page<>(pageNo, pageSize), wrapper);
+        return page.convert(this::toAdminVO);
+    }
+
+    private CsSessionAdminVO toAdminVO(FdCsSession session) {
+        CsSessionAdminVO vo = new CsSessionAdminVO();
+        vo.setId(String.valueOf(session.getId()));
+        vo.setUserId(String.valueOf(session.getUserId()));
+        vo.setAgentId(session.getAgentId());
+        vo.setStatus(session.getStatus());
+        vo.setSource(session.getSource());
+        vo.setLastMessage(session.getLastMessage());
+        vo.setLastMessageTime(session.getLastMessageTime());
+        vo.setUserUnread(session.getUserUnread());
+        vo.setAgentUnread(session.getAgentUnread());
+        vo.setCreateTime(session.getCreateTime());
+        vo.setCloseTime(session.getCloseTime());
+        return vo;
     }
 
     @Override

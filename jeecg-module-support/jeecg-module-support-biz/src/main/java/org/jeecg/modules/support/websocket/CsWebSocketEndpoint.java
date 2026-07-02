@@ -95,6 +95,8 @@ public class CsWebSocketEndpoint {
                 if (csSession.getAgentId() != null) {
                     csSession.setAgentUnread((csSession.getAgentUnread() == null ? 0 : csSession.getAgentUnread()) + 1);
                     messageService.pushToAgent(saved, csSession.getAgentId());
+                } else {
+                    messageService.pushToAllAgents(saved, csSession.getId());
                 }
                 sessionService.updateById(csSession);
                 ack(saved);
@@ -131,6 +133,10 @@ public class CsWebSocketEndpoint {
 
     public static void sendToAgent(String agentId, String message) {
         sendText(AGENT_POOL.get(agentId), message);
+    }
+
+    public static void broadcastToAgents(String message) {
+        AGENT_POOL.values().forEach(session -> sendText(session, message));
     }
 
     private static void sendText(Session wsSession, String message) {
