@@ -203,6 +203,10 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/support/session/transfer/**", "anon");
         filterChainDefinitionMap.put("/support/session/**", "anon");
         filterChainDefinitionMap.put("/search/**", "anon");
+        filterChainDefinitionMap.put("/member/mall/**", "anon");
+        filterChainDefinitionMap.put("/member/checkin/**", "anon");
+        filterChainDefinitionMap.put("/member/**", "anon");
+        filterChainDefinitionMap.put("/member/points/**", "anon");
 
         //错误路径排除
         filterChainDefinitionMap.put("/error", "anon");
