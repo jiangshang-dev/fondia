@@ -23,6 +23,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @SpringBootApplication
@@ -42,13 +44,17 @@ public class JeecgSearchCloudApplication extends SpringBootServletInitializer im
     }
 
     public static void main(String[] args) throws UnknownHostException {
-        ConfigurableApplicationContext application = SpringApplication.run(JeecgSearchCloudApplication.class, args);
+        SpringApplication app = new SpringApplication(JeecgSearchCloudApplication.class);
+        Map<String, Object> defaultProperties = new HashMap<>();
+        defaultProperties.put("management.health.elasticsearch.enabled", false);
+        app.setDefaultProperties(defaultProperties);
+        ConfigurableApplicationContext application = app.run(args);
         Environment env = application.getEnvironment();
         String ip = InetAddress.getLocalHost().getHostAddress();
         String port = env.getProperty("server.port");
         String path = oConvertUtils.getString(env.getProperty("server.servlet.context-path"));
         log.info("\n----------------------------------------------------------\n\t" +
-                "Application Jeecg-Support is running! Access URLs:\n\t" +
+                "Application Jeecg-Search is running! Access URLs:\n\t" +
                 "Local: \t\thttp://localhost:" + port + path + "/doc.html\n" +
                 "External: \thttp://" + ip + ":" + port + path + "/doc.html\n" +
                 "----------------------------------------------------------");

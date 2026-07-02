@@ -78,6 +78,11 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
             recipe.setPublishTime(new Date());
         }
         service.updateById(recipe);
+        if (status != null && status == 1) {
+            service.publishRecipeSearchSync(id);
+        } else {
+            service.removeRecipeFromSearch(id);
+        }
         return Result.OK("状态更新成功");
     }
 
@@ -86,6 +91,7 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
     @DeleteMapping("/delete")
     public Result<String> delete(@RequestParam Long id) {
         service.removeById(id);
+        service.removeRecipeFromSearch(id);
         return Result.OK("删除成功");
     }
 
@@ -93,6 +99,9 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
     @Operation(summary = "批量删除菜谱")
     @DeleteMapping("/deleteBatch")
     public Result<String> deleteBatch(@RequestParam String ids) {
+        Arrays.stream(ids.split(","))
+                .filter(s -> !s.isBlank())
+                .forEach(id -> service.removeRecipeFromSearch(Long.valueOf(id.trim())));
         service.removeByIds(Arrays.asList(ids.split(",")));
         return Result.OK("批量删除成功");
     }

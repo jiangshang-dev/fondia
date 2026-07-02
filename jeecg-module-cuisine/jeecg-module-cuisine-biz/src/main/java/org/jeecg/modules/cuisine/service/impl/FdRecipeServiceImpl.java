@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.jeecg.boot.starter.rabbitmq.client.RabbitMqClient;
 import org.jeecg.common.constant.RabbitConstant;
+import org.jeecg.common.dto.RecipeSearchSyncMessage;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.cuisine.entity.FdRecipe;
@@ -198,9 +199,79 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
         saveIngredients(recipeId, dto.getIngredients(), now);
         saveSteps(recipeId, dto.getSteps(), now);
         saveTagRelations(recipeId, dto.getTagIds(), now);
-        // todo 发布消息通知其他服务
-        rabbitMqClient.sendMessage(RabbitConstant.SAVE_RECIPE, JSONUtil.toJsonStr(recipe));
+        publishRecipeSearchSync(recipeId);
         return recipeId;
+    }
+
+    @Override
+    public void publishRecipeSearchSync(Long recipeId) {
+        RecipeSearchSyncMessage message = buildSearchSyncMessage(recipeId, RecipeSearchSyncMessage.ACTION_SAVE);
+        if (message != null) {
+            rabbitMqClient.sendMessage(RabbitConstant.SAVE_RECIPE, JSONUtil.toJsonStr(message));
+        }
+    }
+
+    @Override
+    public void removeRecipeFromSearch(Long recipeId) {
+        RecipeSearchSyncMessage message = new RecipeSearchSyncMessage();
+        message.setAction(RecipeSearchSyncMessage.ACTION_DELETE);
+        message.setId(String.valueOf(recipeId));
+        rabbitMqClient.sendMessage(RabbitConstant.SAVE_RECIPE, JSONUtil.toJsonStr(message));
+    }
+
+    private RecipeSearchSyncMessage buildSearchSyncMessage(Long recipeId, String action) {
+        FdRecipe recipe = getById(recipeId);
+        if (recipe == null) {
+            return null;
+        }
+        FdRecipeCategory cuisine = categoryService.getById(recipe.getCuisineId());
+        List<String> tags = tagService.listTagNamesByRecipeId(recipeId);
+        List<String> ingredients = ingredientService.listByRecipeId(recipeId).stream()
+                .map(FdRecipeIngredient::getName)
+                .filter(name -> oConvertUtils.isNotEmpty(name))
+                .collect(Collectors.toList());
+
+        RecipeSearchSyncMessage message = new RecipeSearchSyncMessage();
+        message.setAction(action);
+        message.setId(String.valueOf(recipeId));
+        message.setTitle(recipe.getTitle());
+        message.setSubtitle(recipe.getSubtitle());
+        message.setCoverImage(recipe.getCoverImage());
+        message.setCuisineId(recipe.getCuisineId() == null ? null : String.valueOf(recipe.getCuisineId()));
+        message.setCuisineName(cuisine != null ? cuisine.getName() : null);
+        message.setCategoryId(recipe.getCategoryId() == null ? null : String.valueOf(recipe.getCategoryId()));
+        message.setStatus(recipe.getStatus());
+        message.setDifficulty(recipe.getDifficulty());
+        message.setCookMinutes(recipe.getCookMinutes());
+        message.setLikeCount(recipe.getLikeCount());
+        message.setTags(tags);
+        message.setIngredients(ingredients);
+        message.setSearchText(buildSearchText(message));
+        return message;
+    }
+
+    private String buildSearchText(RecipeSearchSyncMessage message) {
+        StringBuilder sb = new StringBuilder();
+        appendSearchToken(sb, message.getTitle());
+        appendSearchToken(sb, message.getSubtitle());
+        appendSearchToken(sb, message.getCuisineName());
+        if (message.getTags() != null) {
+            message.getTags().forEach(tag -> appendSearchToken(sb, tag));
+        }
+        if (message.getIngredients() != null) {
+            message.getIngredients().forEach(item -> appendSearchToken(sb, item));
+        }
+        return sb.toString().trim();
+    }
+
+    private void appendSearchToken(StringBuilder sb, String token) {
+        if (oConvertUtils.isEmpty(token)) {
+            return;
+        }
+        if (sb.length() > 0) {
+            sb.append(' ');
+        }
+        sb.append(token.trim());
     }
 
     private void saveIngredients(Long recipeId, List<FdRecipeIngredient> ingredients, Date now) {
@@ -222,7 +293,7 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
             entity.setSortNo(item.getSortNo() != null ? item.getSortNo() : index);
             entity.setCreateTime(now);
             entity.setUpdateTime(now);
-            ingredientService.save(entity);
+            ingredientService.saveOrUpdate(entity);
             index++;
         }
     }
@@ -247,14 +318,13 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
             entity.setSortNo(item.getSortNo() != null ? item.getSortNo() : index);
             entity.setCreateTime(now);
             entity.setUpdateTime(now);
-            stepService.save(entity);
+            stepService.saveOrUpdate(entity);
             index++;
         }
     }
 
     private void saveTagRelations(Long recipeId, List<Long> tagIds, Date now) {
-        tagRelMapper.delete(new LambdaQueryWrapper<FdRecipeTagRel>()
-                .eq(FdRecipeTagRel::getRecipeId, recipeId));
+        tagRelMapper.physicalDeleteByRecipeId(recipeId);
         if (CollectionUtils.isEmpty(tagIds)) {
             return;
         }

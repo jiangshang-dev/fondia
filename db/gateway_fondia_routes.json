@@ -63,5 +63,15 @@
     }],
     "filters": [],
     "uri": "lb:ws://jeecg-support"
+  },
+  {
+    "id": "jeecg-fondia-search-app",
+    "order": -4,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/search/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-search"
   }
 ]

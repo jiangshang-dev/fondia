@@ -25,4 +25,10 @@ public interface IFdRecipeService extends IService<FdRecipe> {
     Long saveRecipeAdmin(RecipeAdminSaveDTO dto, boolean isUpdate);
 
     void incrementViewCount(Long recipeId);
+
+    /** 发布菜谱搜索索引同步消息 */
+    void publishRecipeSearchSync(Long recipeId);
+
+    /** 从搜索索引删除菜谱 */
+    void removeRecipeFromSearch(Long recipeId);
 }

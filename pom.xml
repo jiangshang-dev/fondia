@@ -73,6 +73,7 @@
     <qiniu-java-sdk.version>7.4.0</qiniu-java-sdk.version>
     <jedis.version>3.8.0</jedis.version>
     <baidu-java-sdk.version>4.16.19</baidu-java-sdk.version>
+    <joda-time.version>2.12.7</joda-time.version>
   </properties>
   <modules>
     <module>jeecg-boot-base-core</module>
@@ -114,11 +115,10 @@
     </repository>
   </repositories>
   <dependencies>
-    <!-- Source: https://mvnrepository.com/artifact/org.jeecgframework.boot/jeecg-boot-starter-rabbitmq -->
+    <!--共通依赖-->
     <dependency>
-      <groupId>org.jeecgframework.boot</groupId>
-      <artifactId>jeecg-boot-starter-rabbitmq</artifactId>
-      <version>3.8.3</version>
+      <groupId>org.jeecgframework.boot3</groupId>
+      <artifactId>jeecg-boot-common</artifactId>
     </dependency>
 
     <dependency>
@@ -232,12 +232,11 @@
         <groupId>org.jeecgframework.boot3</groupId>
         <artifactId>jeecg-boot-starter-rabbitmq</artifactId>
         <version>${jeecgboot.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-          </exclusion>
-        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${joda-time.version}</version>
       </dependency>
       <!--rocketmq-->
       <dependency>
