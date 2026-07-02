@@ -73,5 +73,29 @@
     }],
     "filters": [],
     "uri": "lb://jeecg-search"
+  },
+  {
+    "id": "jeecg-fondia-member-app",
+    "order": -3,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/member/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-member"
+  },
+  {
+    "id": "jeecg-fondia-member-admin",
+    "order": -2,
+    "predicates": [{
+      "name": "Path",
+      "args": {
+        "_genkey_0": "/sys/fd/member/**",
+        "_genkey_1": "/sys/fd/points/**",
+        "_genkey_2": "/sys/fd/mall/**"
+      }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-member"
   }
 ]
