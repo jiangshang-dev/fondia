@@ -29,7 +29,7 @@
             <artifactId>jeecg-boot-starter-job</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jeecg.modules</groupId>
+            <groupId>org.jeecg.modules.support</groupId>
             <artifactId>jeecg-module-support-biz</artifactId>
             <version>3.9.2</version>
         </dependency>

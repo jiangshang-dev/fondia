@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * 菜谱管理端接口（与 C 端 /cuisine/recipe 分离）
@@ -67,7 +68,9 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
     @AutoLog(value = "更新菜谱状态")
     @Operation(summary = "更新菜谱上下架状态")
     @PutMapping("/updateStatus")
-    public Result<String> updateStatus(@RequestParam Long id, @RequestParam Integer status) {
+    public Result<String> updateStatus(@RequestBody Map<String, Object> params) {
+        String id = (String) params.get("id");
+        Integer status = (Integer) params.get("status");
         FdRecipe recipe = service.getById(id);
         if (recipe == null) {
             return Result.error("菜谱不存在");
@@ -79,9 +82,9 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
         }
         service.updateById(recipe);
         if (status != null && status == 1) {
-            service.publishRecipeSearchSync(id);
+            service.publishRecipeSearchSync(Long.valueOf(id));
         } else {
-            service.removeRecipeFromSearch(id);
+            service.removeRecipeFromSearch(Long.valueOf(id));
         }
         return Result.OK("状态更新成功");
     }

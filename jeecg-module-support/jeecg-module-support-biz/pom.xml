@@ -8,7 +8,8 @@
         <artifactId>jeecg-module-support</artifactId>
         <version>3.9.2</version>
     </parent>
-    
+
+    <groupId>org.jeecg.modules.support</groupId>
     <artifactId>jeecg-module-support-biz</artifactId>
 
     <properties>
