@@ -22,6 +22,26 @@ public interface IVerificationCodeService {
     boolean verifyEmailCode(String email, String scene, String code);
 
     /**
+     * 发送手机验证码
+     */
+    void sendPhoneCode(String phone, String scene);
+
+    /**
+     * 验证手机验证码
+     */
+    boolean verifyPhoneCode(String phone, String scene, String code);
+
+    /**
+     * 验证并消费验证码（验证成功后删除）
+     */
+    boolean verifyAndConsumeEmailCode(String email, String scene, String code);
+
+    /**
+     * 验证并消费手机验证码
+     */
+    boolean verifyAndConsumePhoneCode(String phone, String scene, String code);
+
+    /**
      * 生成6位随机数字验证码
      * @return 验证码
      */

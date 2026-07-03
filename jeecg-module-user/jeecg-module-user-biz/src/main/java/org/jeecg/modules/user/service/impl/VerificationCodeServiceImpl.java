@@ -73,19 +73,61 @@ public class VerificationCodeServiceImpl implements IVerificationCodeService {
 
     @Override
     public boolean verifyEmailCode(String email, String scene, String code) {
-        String codeKey = CODE_PREFIX + scene + ":" + email;
-        String storedCode = redisTemplate.opsForValue().get(codeKey);
+        return checkCode(buildEmailCodeKey(email, scene), code);
+    }
 
-        if (storedCode == null) {
+    @Override
+    public void sendPhoneCode(String phone, String scene) {
+        String retryKey = CODE_PREFIX + "retry:" + scene + ":phone:" + phone;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(retryKey))) {
+            throw new JeecgBootException("验证码发送频繁，请稍后再试");
+        }
+
+        String code = generateCode();
+        String codeKey = buildPhoneCodeKey(phone, scene);
+        redisTemplate.opsForValue().set(codeKey, code, CODE_EXPIRE_MINUTES, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(retryKey, "1", CODE_RETRY_SECONDS, TimeUnit.SECONDS);
+
+        // todo 接入短信服务，生产环境请替换为真实短信发送
+        log.info("发送手机验证码成功, phone: {}, scene: {}, code: {}", phone, scene, code);
+    }
+
+    @Override
+    public boolean verifyPhoneCode(String phone, String scene, String code) {
+        return checkCode(buildPhoneCodeKey(phone, scene), code);
+    }
+
+    @Override
+    public boolean verifyAndConsumeEmailCode(String email, String scene, String code) {
+        String codeKey = CODE_PREFIX + scene + ":" + email;
+        if (!checkCode(codeKey, code)) {
             return false;
         }
+        redisTemplate.delete(codeKey);
+        return true;
+    }
 
-        boolean result = storedCode.equals(code);
-        if (result) {
-            // 验证成功后删除验证码
-//            redisTemplate.delete(codeKey);
+    @Override
+    public boolean verifyAndConsumePhoneCode(String phone, String scene, String code) {
+        String codeKey = buildPhoneCodeKey(phone, scene);
+        if (!checkCode(codeKey, code)) {
+            return false;
         }
-        return result;
+        redisTemplate.delete(codeKey);
+        return true;
+    }
+
+    private String buildEmailCodeKey(String email, String scene) {
+        return CODE_PREFIX + scene + ":" + email;
+    }
+
+    private String buildPhoneCodeKey(String phone, String scene) {
+        return CODE_PREFIX + scene + ":phone:" + phone;
+    }
+
+    private boolean checkCode(String codeKey, String code) {
+        String storedCode = redisTemplate.opsForValue().get(codeKey);
+        return storedCode != null && storedCode.equals(code);
     }
 
     @Override

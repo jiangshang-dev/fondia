@@ -26,6 +26,7 @@ import org.jeecg.modules.user.service.IFdUserAuthService;
 import org.jeecg.modules.user.service.IFdUserService;
 import org.jeecg.modules.user.service.IVerificationCodeService;
 import org.jeecg.modules.user.util.HuaweiIdTokenUtil;
+import org.jeecg.modules.user.vo.AccountDeletePreviewVO;
 import org.jeecg.modules.user.vo.LoginResultVO;
 import org.jeecg.modules.user.vo.UserInfoVO;
 import org.springframework.beans.BeanUtils;
@@ -47,6 +48,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> implements IFdUserService {
+
+    private static final String DELETE_ACCOUNT_SCENE = "delete_account";
 
     @Autowired
     private IFdUserAuthService userAuthService;
@@ -366,6 +369,118 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         user.setUpdateTime(System.currentTimeMillis());
         updateById(user);
         return convertToUserInfoVO(user);
+    }
+
+    @Override
+    public AccountDeletePreviewVO getAccountDeletePreview(String authorization) {
+        FdUser user = requireActiveUser(authorization);
+        AccountDeletePreviewVO preview = new AccountDeletePreviewVO();
+        if (oConvertUtils.isNotEmpty(user.getPhone())) {
+            preview.setVerifyType("phone");
+            preview.setMaskedContact(maskPhone(user.getPhone()));
+            return preview;
+        }
+        if (oConvertUtils.isNotEmpty(user.getEmail())) {
+            preview.setVerifyType("email");
+            preview.setMaskedContact(maskEmail(user.getEmail()));
+            return preview;
+        }
+        throw new JeecgBootException("请先绑定手机号或邮箱后再注销账号");
+    }
+
+    @Override
+    public void sendAccountDeleteCode(String authorization) {
+        FdUser user = requireActiveUser(authorization);
+        if (oConvertUtils.isNotEmpty(user.getPhone())) {
+            verificationCodeService.sendPhoneCode(user.getPhone(), DELETE_ACCOUNT_SCENE);
+            return;
+        }
+        if (oConvertUtils.isNotEmpty(user.getEmail())) {
+            verificationCodeService.sendEmailCode(user.getEmail(), DELETE_ACCOUNT_SCENE);
+            return;
+        }
+        throw new JeecgBootException("请先绑定手机号或邮箱后再注销账号");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAccount(String authorization, String code) {
+        FdUser user = requireActiveUser(authorization);
+        boolean verified = false;
+        if (oConvertUtils.isNotEmpty(user.getPhone())) {
+            verified = verificationCodeService.verifyAndConsumePhoneCode(
+                    user.getPhone(), DELETE_ACCOUNT_SCENE, code);
+        } else if (oConvertUtils.isNotEmpty(user.getEmail())) {
+            verified = verificationCodeService.verifyAndConsumeEmailCode(
+                    user.getEmail(), DELETE_ACCOUNT_SCENE, code);
+        } else {
+            throw new JeecgBootException("请先绑定手机号或邮箱后再注销账号");
+        }
+        if (!verified) {
+            throw new JeecgBootException("验证码错误或已过期");
+        }
+
+        long now = System.currentTimeMillis();
+        user.setStatus(-1);
+        user.setNickname("已注销用户");
+        user.setAvatar(null);
+        user.setSign(null);
+        user.setPhone(null);
+        user.setEmail(null);
+        user.setUsername("deleted_" + user.getId() + "_" + now);
+        String salt = oConvertUtils.randomGen(8);
+        user.setPassword(PasswordUtil.encrypt(user.getUsername(), oConvertUtils.randomGen(16), salt));
+        user.setPoints(0);
+        user.setGrowthValue(0);
+        user.setCheckInDays(0);
+        user.setUpdateTime(now);
+        updateById(user);
+
+        userAuthService.remove(new LambdaQueryWrapper<FdUserAuth>()
+                .eq(FdUserAuth::getUserId, user.getId()));
+    }
+
+    /**
+     * 解析并校验当前登录用户
+     */
+    private FdUser requireActiveUser(String authorization) {
+        String token = extractBearerToken(authorization);
+        if (oConvertUtils.isEmpty(token)) {
+            throw new JeecgBootException("Token不能为空");
+        }
+        String username = JwtUtil.getUsername(token);
+        if (oConvertUtils.isEmpty(username)) {
+            throw new JeecgBootException("Token无效");
+        }
+        FdUser user = resolveUserFromJwtUsername(username);
+        if (user == null) {
+            throw new JeecgBootException("用户不存在");
+        }
+        if (user.getStatus() == null || user.getStatus() != 1) {
+            throw new JeecgBootException("账号已被禁用或已注销");
+        }
+        if (!JwtUtil.verify(token, username, user.getPassword())) {
+            throw new JeecgBootException("Token无效或已过期");
+        }
+        return user;
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 7) {
+            return phone;
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return email;
+        }
+        int atIndex = email.indexOf('@');
+        if (atIndex <= 1) {
+            return "*" + email.substring(atIndex);
+        }
+        return email.charAt(0) + "***" + email.substring(atIndex);
     }
 
     /**

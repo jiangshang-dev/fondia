@@ -7,6 +7,7 @@ import org.jeecg.modules.user.dto.PasswordLoginDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
 import org.jeecg.modules.user.entity.FdUser;
+import org.jeecg.modules.user.vo.AccountDeletePreviewVO;
 import org.jeecg.modules.user.vo.LoginResultVO;
 import org.jeecg.modules.user.vo.UserInfoVO;
 
@@ -67,4 +68,19 @@ public interface IFdUserService extends IService<FdUser> {
      * 更新当前用户资料
      */
     UserInfoVO updateUserProfile(String authorization, UpdateUserProfileDTO dto);
+
+    /**
+     * 注销前验证信息预览
+     */
+    AccountDeletePreviewVO getAccountDeletePreview(String authorization);
+
+    /**
+     * 发送注销验证码
+     */
+    void sendAccountDeleteCode(String authorization);
+
+    /**
+     * 注销当前账号
+     */
+    void deleteAccount(String authorization, String code);
 }

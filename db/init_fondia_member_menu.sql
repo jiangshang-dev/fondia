@@ -7,16 +7,16 @@
 -- ============================================================
 
 -- ========== 二级目录：会员运营 ==========
-INSERT INTO `sys_permission` VALUES ('2000100000000000090', '2000100000000000001', '会员运营', '/fondia/member', 'layouts/default/index', 1, NULL, '/fondia/member/plan', 0, NULL, '0', 7.00, 0, 'ant-design:crown-outlined', 0, 0, 0, 0, '会员套餐/订单/订阅/支付', 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000090', '2072537385652469761', '会员运营', '/fondia/member', 'layouts/default/index', 1, NULL, '/fondia/member/plan', 0, NULL, '0', 7.00, 0, 'ant-design:crown-outlined', 0, 0, 0, 0, '会员套餐/订单/订阅/支付', 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
 
-INSERT INTO `sys_permission` VALUES ('2000100000000000091', '2000100000000000090', '会员套餐', '/fondia/member/plan', 'fondia/member/plan/index', 1, NULL, NULL, 1, NULL, '0', 1.00, 0, 'ant-design:gift-outlined', 0, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
-INSERT INTO `sys_permission` VALUES ('2000100000000000092', '2000100000000000091', '新增套餐', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberPlan:add', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
-INSERT INTO `sys_permission` VALUES ('2000100000000000093', '2000100000000000091', '编辑套餐', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberPlan:edit', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
-INSERT INTO `sys_permission` VALUES ('2000100000000000094', '2000100000000000091', '删除套餐', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberPlan:delete', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
-INSERT INTO `sys_permission` VALUES ('2000100000000000095', '2000100000000000091', '上下架', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberPlan:status', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000091', '2072537385652469761', '会员套餐', '/fondia/member/plan', 'fondia/member/plan/index', 1, NULL, NULL, 1, NULL, '0', 1.00, 0, 'ant-design:gift-outlined', 0, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000092', '2072537385652469761', '新增套餐', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberPlan:add', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000093', '2072537385652469761', '编辑套餐', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberPlan:edit', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000094', '2072537385652469761', '删除套餐', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberPlan:delete', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000095', '2072537385652469761', '上下架', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberPlan:status', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
 
-INSERT INTO `sys_permission` VALUES ('2000100000000000096', '2000100000000000090', '会员订单', '/fondia/member/order', 'fondia/member/order/index', 1, NULL, NULL, 1, NULL, '0', 2.00, 0, 'ant-design:shopping-outlined', 1, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
-INSERT INTO `sys_permission` VALUES ('2000100000000000097', '2000100000000000096', '查看详情', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberOrder:view', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000096', '2072537385652469761', '会员订单', '/fondia/member/order', 'fondia/member/order/index', 1, NULL, NULL, 1, NULL, '0', 2.00, 0, 'ant-design:shopping-outlined', 1, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
+INSERT INTO `sys_permission` VALUES ('2000100000000000097', '2072537385652469761', '查看详情', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberOrder:view', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
 
 INSERT INTO `sys_permission` VALUES ('2000100000000000098', '2000100000000000090', '会员订阅', '/fondia/member/subscription', 'fondia/member/subscription/index', 1, NULL, NULL, 1, NULL, '0', 3.00, 0, 'ant-design:idcard-outlined', 1, 1, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
 INSERT INTO `sys_permission` VALUES ('2000100000000000099', '2000100000000000098', '查看详情', NULL, NULL, 0, NULL, NULL, 2, 'fondia:memberSubscription:view', '1', NULL, 0, NULL, 1, 0, 0, 0, NULL, 'admin', NOW(), NULL, NULL, 0, 0, '1', 0);
