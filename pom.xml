@@ -84,6 +84,7 @@
     <module>jeecg-module-interaction</module>
     <module>jeecg-module-support</module>
     <module>jeecg-module-search</module>
+    <module>jeecg-module-member</module>
   </modules>
   <repositories>
     <repository>

@@ -12,7 +12,7 @@ import lombok.Data;
 public class ThirdPartyLoginDTO {
 
     @NotBlank(message = "登录渠道类型不能为空")
-    @Schema(description = "登录渠道类型: APPLE, GOOGLE, WECHAT, PHONE, EMAIL, ACCOUNT, ALIPAY", required = true)
+    @Schema(description = "登录渠道类型: APPLE, GOOGLE, WECHAT, HUAWEI, ALIPAY 等", required = true)
     private String identityType;
 
     @NotBlank(message = "第三方唯一标识不能为空")

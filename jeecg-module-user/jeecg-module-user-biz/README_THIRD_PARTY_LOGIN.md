@@ -110,7 +110,34 @@
 }
 ```
 
-#### 3.4 第三方登录
+#### 3.4 华为账号一键登录（HarmonyOS）
+**接口地址**: `POST /user/auth/huaweiLogin`
+
+**请求参数**:
+```json
+{
+  "authorizationCode": "华为AccountKit返回的授权码",
+  "idToken": "可选，华为返回的idToken",
+  "state": "防CSRF的state",
+  "nickname": "可选，客户端获取的昵称",
+  "avatar": "可选，客户端获取的头像URL",
+  "phone": "可选"
+}
+```
+
+**响应格式**与邮箱验证码登录一致（`token`、`refreshToken`、`userInfo`、`isNewUser`）。
+
+**后端配置** (`application.yml`):
+```yaml
+thirdparty:
+  huawei:
+    client-id: 'AGC的Client_ID'
+    client-secret: 'AGC的Client_Secret'
+    redirect-uri: ''
+    dev-mode: false   # 生产环境务必 false，并配置 client-secret
+```
+
+#### 3.5 第三方登录
 **接口地址**: `POST /user/auth/thirdPartyLogin`
 
 **请求参数**:

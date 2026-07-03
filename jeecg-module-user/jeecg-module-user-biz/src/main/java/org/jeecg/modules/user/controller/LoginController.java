@@ -6,6 +6,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
+import org.jeecg.modules.user.dto.HuaweiLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
 import org.jeecg.modules.user.dto.SendEmailCodeDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
@@ -87,6 +88,22 @@ public class LoginController {
             return Result.ok(result);
         } catch (Exception e) {
             log.error("账号密码登录失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 华为账号一键登录（HarmonyOS Account Kit）
+     */
+    @Operation(summary = "华为账号一键登录")
+    @PostMapping("/huaweiLogin")
+    public Result<LoginResultVO> huaweiLogin(@Validated @RequestBody HuaweiLoginDTO loginDTO) {
+        log.info("华为账号登录请求");
+        try {
+            LoginResultVO result = userService.huaweiLogin(loginDTO);
+            return Result.ok(result);
+        } catch (Exception e) {
+            log.error("华为账号登录失败", e);
             return Result.error(e.getMessage());
         }
     }

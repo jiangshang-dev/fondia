@@ -1,4 +1,4 @@
-package org.jeecg.modules.support.client;
+package org.jeecg.modules.support.api;
 
 import org.jeecg.common.api.vo.Result;
 import org.springframework.cloud.openfeign.FeignClient;

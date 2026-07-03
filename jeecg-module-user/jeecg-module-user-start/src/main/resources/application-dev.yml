@@ -407,3 +407,10 @@ justauth:
     type: default
     prefix: 'demo::'
     timeout: 1h
+# 华为账号 OAuth（HarmonyOS 一键登录）
+thirdparty:
+  huawei:
+    client-id: ''
+    client-secret: ''
+    redirect-uri: ''
+    dev-mode: true

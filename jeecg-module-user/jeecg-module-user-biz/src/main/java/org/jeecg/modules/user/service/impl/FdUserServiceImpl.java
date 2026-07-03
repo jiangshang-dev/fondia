@@ -11,16 +11,21 @@ import org.jeecg.common.util.PasswordUtil;
 import org.jeecg.common.util.encryption.AesEncryptUtil;
 import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
+import org.jeecg.modules.user.dto.HuaweiLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
 import org.jeecg.modules.user.entity.FdUser;
 import org.jeecg.modules.user.entity.FdUserAuth;
+import org.jeecg.modules.user.config.HuaweiOAuthProperties;
+import org.jeecg.modules.user.enums.IdentityTypeEnum;
 import org.jeecg.modules.user.handler.ThirdPartyLoginHandler;
 import org.jeecg.modules.user.mapper.FdUserMapper;
+import org.jeecg.modules.user.service.HuaweiOAuthClient;
 import org.jeecg.modules.user.service.IFdUserAuthService;
 import org.jeecg.modules.user.service.IFdUserService;
 import org.jeecg.modules.user.service.IVerificationCodeService;
+import org.jeecg.modules.user.util.HuaweiIdTokenUtil;
 import org.jeecg.modules.user.vo.LoginResultVO;
 import org.jeecg.modules.user.vo.UserInfoVO;
 import org.springframework.beans.BeanUtils;
@@ -48,6 +53,12 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
 
     @Autowired
     private IVerificationCodeService verificationCodeService;
+
+    @Autowired
+    private HuaweiOAuthClient huaweiOAuthClient;
+
+    @Autowired
+    private HuaweiOAuthProperties huaweiOAuthProperties;
 
     private Map<String, ThirdPartyLoginHandler> handlerMap;
 
@@ -207,6 +218,46 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
                 .userInfo(convertToUserInfoVO(user))
                 .isNewUser(false)
                 .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public LoginResultVO huaweiLogin(HuaweiLoginDTO loginDTO) {
+        String idToken = loginDTO.getIdToken();
+        String accessToken = null;
+
+        boolean hasSecret = oConvertUtils.isNotEmpty(huaweiOAuthProperties.getClientSecret())
+                && oConvertUtils.isNotEmpty(huaweiOAuthProperties.getClientId());
+
+        if (hasSecret) {
+            HuaweiOAuthClient.HuaweiTokenResult tokenResult =
+                    huaweiOAuthClient.exchangeAuthorizationCode(loginDTO.getAuthorizationCode());
+            if (oConvertUtils.isNotEmpty(tokenResult.getIdToken())) {
+                idToken = tokenResult.getIdToken();
+            }
+            accessToken = tokenResult.getAccessToken();
+        } else if (huaweiOAuthProperties.isDevMode() && oConvertUtils.isNotEmpty(idToken)) {
+            log.warn("华为 OAuth 未配置密钥，开发模式直接使用客户端 idToken，生产环境请配置 thirdparty.huawei.clientSecret");
+        } else {
+            throw new JeecgBootException("华为登录服务未配置，请联系管理员");
+        }
+
+        String unionId = HuaweiIdTokenUtil.getUnionId(idToken);
+        String openId = HuaweiIdTokenUtil.getSub(idToken);
+        String identifier = oConvertUtils.isNotEmpty(unionId) ? unionId : openId;
+        if (oConvertUtils.isEmpty(identifier)) {
+            throw new JeecgBootException("无法解析华为账号标识，请重试");
+        }
+
+        ThirdPartyLoginDTO thirdPartyLoginDTO = new ThirdPartyLoginDTO();
+        thirdPartyLoginDTO.setIdentityType(IdentityTypeEnum.HUAWEI.getCode());
+        thirdPartyLoginDTO.setIdentifier(identifier);
+        thirdPartyLoginDTO.setCredential(accessToken != null ? accessToken : loginDTO.getAuthorizationCode());
+        thirdPartyLoginDTO.setNickname(loginDTO.getNickname());
+        thirdPartyLoginDTO.setAvatar(loginDTO.getAvatar());
+        thirdPartyLoginDTO.setPhone(loginDTO.getPhone());
+
+        return thirdPartyLogin(thirdPartyLoginDTO);
     }
 
     @Override

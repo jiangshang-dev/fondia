@@ -58,7 +58,8 @@ public class VerificationCodeServiceImpl implements IVerificationCodeService {
             // 使用Hutool发送邮件
             String title = "验证码";
             String content = String.format("您的验证码是：%s，%s分钟内有效。请勿泄露给他人。", code, CODE_EXPIRE_MINUTES);
-//            MailUtil.send(email, title, content, false);
+            // todo 发送邮件，上生产时记得打开注释
+            // MailUtil.send(email, title, content, false);
             log.info("验证码: {}", code);
             log.info("发送邮箱验证码成功, email: {}, scene: {}, code: {}", email, scene, code);
         } catch (Exception e) {

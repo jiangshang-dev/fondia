@@ -2,6 +2,7 @@ package org.jeecg.modules.user.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
+import org.jeecg.modules.user.dto.HuaweiLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
@@ -37,6 +38,11 @@ public interface IFdUserService extends IService<FdUser> {
      * @return 登录结果
      */
     LoginResultVO passwordLogin(PasswordLoginDTO loginDTO);
+
+    /**
+     * 华为账号一键登录
+     */
+    LoginResultVO huaweiLogin(HuaweiLoginDTO loginDTO);
 
     /**
      * 根据ID获取用户信息

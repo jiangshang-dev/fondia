@@ -8,7 +8,7 @@ import jakarta.annotation.Resource;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
-import org.jeecg.modules.support.client.CsUserFeignClient;
+import org.jeecg.modules.support.api.CsUserFeignClient;
 import org.jeecg.modules.support.dto.AiChatDTO;
 import org.jeecg.modules.support.dto.SendMessageDTO;
 import org.jeecg.modules.support.dto.SessionCreateDTO;

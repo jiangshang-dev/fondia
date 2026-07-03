@@ -13,7 +13,8 @@ public enum IdentityTypeEnum {
     PHONE("PHONE", "手机号"),
     EMAIL("EMAIL", "邮箱"),
     ACCOUNT("ACCOUNT", "账号"),
-    ALIPAY("ALIPAY", "支付宝");
+    ALIPAY("ALIPAY", "支付宝"),
+    HUAWEI("HUAWEI", "华为账号");
 
     private final String code;
     private final String desc;
