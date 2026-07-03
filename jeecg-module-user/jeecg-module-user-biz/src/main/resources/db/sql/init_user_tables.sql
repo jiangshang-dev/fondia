@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `fd_user` (
 -- ALTER TABLE fd_user ADD COLUMN growth_value int DEFAULT 0 COMMENT '成长值';
 -- ALTER TABLE fd_user ADD COLUMN points int DEFAULT 0 COMMENT '积分';
 -- ALTER TABLE fd_user ADD COLUMN check_in_days int DEFAULT 0 COMMENT '连续签到天数';
+ALTER TABLE fd_user ADD COLUMN IF NOT EXISTS `salt` varchar(16) DEFAULT NULL COMMENT '密码盐' AFTER `password`;
 
 -- App用户第三方登录授权表
 CREATE TABLE IF NOT EXISTS `fd_user_auth` (

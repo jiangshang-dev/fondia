@@ -39,6 +39,10 @@ public class FdUser implements Serializable {
     @Schema(description = "密码")
     private String password;
 
+    /**密码盐*/
+    @Schema(description = "密码盐")
+    private String salt;
+
     /**用户昵称*/
     @Schema(description = "用户昵称")
     private String nickname;

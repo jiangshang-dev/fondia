@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.user.dto.DeleteAccountDTO;
+import org.jeecg.modules.user.dto.ChangePasswordDTO;
 import org.jeecg.modules.user.service.IFdUserService;
 import org.jeecg.modules.user.vo.AccountDeletePreviewVO;
 import org.springframework.validation.annotation.Validated;
@@ -37,5 +38,13 @@ public class AccountController {
                                         @Validated @RequestBody DeleteAccountDTO dto) {
         userService.deleteAccount(authorization, dto.getCode());
         return Result.ok("账号已注销");
+    }
+
+    @Operation(summary = "修改密码")
+    @PostMapping("/changePassword")
+    public Result<String> changePassword(@RequestHeader("Authorization") String authorization,
+                                         @Validated @RequestBody ChangePasswordDTO dto) {
+        userService.changePassword(authorization, dto);
+        return Result.ok("密码修改成功");
     }
 }

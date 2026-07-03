@@ -1,9 +1,12 @@
 package org.jeecg.modules.user.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.jeecg.modules.user.dto.ChangePasswordDTO;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
 import org.jeecg.modules.user.dto.HuaweiLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
+import org.jeecg.modules.user.dto.ResetPasswordDTO;
+import org.jeecg.modules.user.dto.SendResetPasswordCodeDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
 import org.jeecg.modules.user.entity.FdUser;
@@ -83,4 +86,19 @@ public interface IFdUserService extends IService<FdUser> {
      * 注销当前账号
      */
     void deleteAccount(String authorization, String code);
+
+    /**
+     * 修改密码（已登录）
+     */
+    void changePassword(String authorization, ChangePasswordDTO dto);
+
+    /**
+     * 发送重置密码验证码
+     */
+    void sendResetPasswordCode(SendResetPasswordCodeDTO dto);
+
+    /**
+     * 重置密码（忘记密码）
+     */
+    void resetPassword(ResetPasswordDTO dto);
 }

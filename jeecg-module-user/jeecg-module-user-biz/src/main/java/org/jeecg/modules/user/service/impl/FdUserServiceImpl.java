@@ -1,6 +1,5 @@
 package org.jeecg.modules.user.service.impl;
 
-import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -8,11 +7,13 @@ import org.jeecg.common.constant.CommonConstant;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.system.util.JwtUtil;
 import org.jeecg.common.util.PasswordUtil;
-import org.jeecg.common.util.encryption.AesEncryptUtil;
 import org.jeecg.common.util.oConvertUtils;
+import org.jeecg.modules.user.dto.ChangePasswordDTO;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
 import org.jeecg.modules.user.dto.HuaweiLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
+import org.jeecg.modules.user.dto.ResetPasswordDTO;
+import org.jeecg.modules.user.dto.SendResetPasswordCodeDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
 import org.jeecg.modules.user.entity.FdUser;
@@ -50,6 +51,9 @@ import java.util.stream.Collectors;
 public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> implements IFdUserService {
 
     private static final String DELETE_ACCOUNT_SCENE = "delete_account";
+    private static final String RESET_PASSWORD_SCENE = "reset_password";
+    /** 邮箱验证码注册时的默认登录密码 */
+    private static final String DEFAULT_EMAIL_PASSWORD = "123456";
 
     @Autowired
     private IFdUserAuthService userAuthService;
@@ -150,19 +154,22 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         String username = "用户" + System.currentTimeMillis();
         boolean isNewUser = false;
         if (user == null) {
-            // 3. 用户不存在，创建新用户
+            // 3. 用户不存在，创建新用户（默认密码 123456，支持后续邮箱+密码登录）
             isNewUser = true;
             user = new FdUser();
             user.setEmail(email);
             user.setNickname(System.currentTimeMillis()+"");
             user.setUsername(username);
-            String salt = oConvertUtils.randomGen(8);
-            String passwordEncode = PasswordUtil.encrypt(username, "123456", salt);
-            user.setPassword(passwordEncode);
             user.setStatus(1);
             user.setCreateTime(System.currentTimeMillis());
             user.setUpdateTime(System.currentTimeMillis());
+            setPlainPassword(user, DEFAULT_EMAIL_PASSWORD);
             this.save(user);
+        } else if (!hasPassword(user)) {
+            // 兼容历史邮箱用户：补全默认密码以便生成 Token
+            setPlainPassword(user, DEFAULT_EMAIL_PASSWORD);
+            user.setUpdateTime(System.currentTimeMillis());
+            updateById(user);
         }
 
         // 4. 检查账号状态
@@ -200,17 +207,14 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         }
 
         // 3. 验证密码
-        if (user.getPassword() == null) {
-            throw new JeecgBootException("该账号未设置密码，请使用其他方式登录");
+        if (!hasPassword(user)) {
+            throw new JeecgBootException("该账号未设置密码，请使用验证码登录后在设置中修改密码");
         }
-
-        // 这里使用BCrypt验证密码，实际项目中密码应该是加密存储的
-        String passwordEncode = AesEncryptUtil.resolvePassword(user.getPassword());
-        if (!BCrypt.checkpw(password, passwordEncode)) {
+        if (!matchesPassword(user, password)) {
             throw new JeecgBootException("账号或密码错误");
         }
 
-        // 4. 生成登录Token
+        // 4. 生成登录Token（与邮箱登录一致）
         String token = generateToken(user);
         String refreshToken = generateRefreshToken(user);
 
@@ -428,8 +432,7 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         user.setPhone(null);
         user.setEmail(null);
         user.setUsername("deleted_" + user.getId() + "_" + now);
-        String salt = oConvertUtils.randomGen(8);
-        user.setPassword(PasswordUtil.encrypt(user.getUsername(), oConvertUtils.randomGen(16), salt));
+        setPlainPassword(user, oConvertUtils.randomGen(16));
         user.setPoints(0);
         user.setGrowthValue(0);
         user.setCheckInDays(0);
@@ -438,6 +441,109 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
 
         userAuthService.remove(new LambdaQueryWrapper<FdUserAuth>()
                 .eq(FdUserAuth::getUserId, user.getId()));
+    }
+
+    @Override
+    public void changePassword(String authorization, ChangePasswordDTO dto) {
+        FdUser user = requireActiveUser(authorization);
+        validateNewPassword(dto.getNewPassword(), dto.getConfirmPassword());
+        if (hasPassword(user)) {
+            if (oConvertUtils.isEmpty(dto.getOldPassword())) {
+                throw new JeecgBootException("请输入旧密码");
+            }
+            if (!matchesPassword(user, dto.getOldPassword())) {
+                throw new JeecgBootException("旧密码输入错误");
+            }
+            if (dto.getOldPassword().equals(dto.getNewPassword())) {
+                throw new JeecgBootException("新密码不能与旧密码相同");
+            }
+        }
+        setPlainPassword(user, dto.getNewPassword());
+        user.setUpdateTime(System.currentTimeMillis());
+        updateById(user);
+    }
+
+    @Override
+    public void sendResetPasswordCode(SendResetPasswordCodeDTO dto) {
+        FdUser user = requireResetPasswordUser(dto.getAccount());
+        sendVerifyCodeForUser(user, RESET_PASSWORD_SCENE);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetPassword(ResetPasswordDTO dto) {
+        FdUser user = requireResetPasswordUser(dto.getAccount());
+        validateNewPassword(dto.getNewPassword(), dto.getConfirmPassword());
+        if (!verifyResetCode(user, dto.getCode())) {
+            throw new JeecgBootException("验证码错误或已过期");
+        }
+        setPlainPassword(user, dto.getNewPassword());
+        user.setUpdateTime(System.currentTimeMillis());
+        updateById(user);
+    }
+
+    private FdUser requireResetPasswordUser(String account) {
+        if (oConvertUtils.isEmpty(account)) {
+            throw new JeecgBootException("账号不能为空");
+        }
+        FdUser user = getUserByAccount(account.trim());
+        if (user == null || user.getStatus() == null || user.getStatus() != 1) {
+            throw new JeecgBootException("账号不存在或不可用");
+        }
+        return user;
+    }
+
+    private void validateNewPassword(String newPassword, String confirmPassword) {
+        if (oConvertUtils.isEmpty(newPassword)) {
+            throw new JeecgBootException("新密码不能为空");
+        }
+        if (newPassword.length() < 6) {
+            throw new JeecgBootException("密码长度不能少于6位");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            throw new JeecgBootException("两次输入密码不一致");
+        }
+    }
+
+    private void sendVerifyCodeForUser(FdUser user, String scene) {
+        if (oConvertUtils.isNotEmpty(user.getPhone())) {
+            verificationCodeService.sendPhoneCode(user.getPhone(), scene);
+            return;
+        }
+        if (oConvertUtils.isNotEmpty(user.getEmail())) {
+            verificationCodeService.sendEmailCode(user.getEmail(), scene);
+            return;
+        }
+        throw new JeecgBootException("账号未绑定手机号或邮箱，无法发送验证码");
+    }
+
+    private boolean verifyResetCode(FdUser user, String code) {
+        if (oConvertUtils.isNotEmpty(user.getPhone())
+                && verificationCodeService.verifyAndConsumePhoneCode(user.getPhone(), RESET_PASSWORD_SCENE, code)) {
+            return true;
+        }
+        if (oConvertUtils.isNotEmpty(user.getEmail())) {
+            return verificationCodeService.verifyAndConsumeEmailCode(user.getEmail(), RESET_PASSWORD_SCENE, code);
+        }
+        return false;
+    }
+
+    private boolean hasPassword(FdUser user) {
+        return oConvertUtils.isNotEmpty(user.getPassword()) && oConvertUtils.isNotEmpty(user.getSalt());
+    }
+
+    private boolean matchesPassword(FdUser user, String plainPassword) {
+        if (!hasPassword(user)) {
+            return false;
+        }
+        String encoded = PasswordUtil.encrypt(resolveJwtUsername(user), plainPassword, user.getSalt());
+        return user.getPassword().equals(encoded);
+    }
+
+    private void setPlainPassword(FdUser user, String plainPassword) {
+        String salt = oConvertUtils.randomGen(8);
+        user.setSalt(salt);
+        user.setPassword(PasswordUtil.encrypt(resolveJwtUsername(user), plainPassword, salt));
     }
 
     /**

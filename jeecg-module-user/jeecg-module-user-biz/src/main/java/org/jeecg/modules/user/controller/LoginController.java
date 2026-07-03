@@ -8,7 +8,9 @@ import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.user.dto.EmailLoginDTO;
 import org.jeecg.modules.user.dto.HuaweiLoginDTO;
 import org.jeecg.modules.user.dto.PasswordLoginDTO;
+import org.jeecg.modules.user.dto.ResetPasswordDTO;
 import org.jeecg.modules.user.dto.SendEmailCodeDTO;
+import org.jeecg.modules.user.dto.SendResetPasswordCodeDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.service.IFdUserService;
 import org.jeecg.modules.user.service.IVerificationCodeService;
@@ -79,7 +81,7 @@ public class LoginController {
      * 支持用户名、手机号、邮箱作为账号
      */
     @Operation(summary = "账号密码登录")
-    @PostMapping("/passwordLogin")
+    @PostMapping({"/passwordLogin", "/login"})
     public Result<LoginResultVO> passwordLogin(@Validated @RequestBody PasswordLoginDTO loginDTO) {
         log.info("账号密码登录请求, account: {}", loginDTO.getAccount());
         
@@ -88,6 +90,30 @@ public class LoginController {
             return Result.ok(result);
         } catch (Exception e) {
             log.error("账号密码登录失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "发送重置密码验证码")
+    @PostMapping("/sendResetPasswordCode")
+    public Result<String> sendResetPasswordCode(@Validated @RequestBody SendResetPasswordCodeDTO dto) {
+        try {
+            userService.sendResetPasswordCode(dto);
+            return Result.ok("验证码发送成功");
+        } catch (Exception e) {
+            log.error("发送重置密码验证码失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "重置密码")
+    @PostMapping("/resetPassword")
+    public Result<String> resetPassword(@Validated @RequestBody ResetPasswordDTO dto) {
+        try {
+            userService.resetPassword(dto);
+            return Result.ok("密码重置成功");
+        } catch (Exception e) {
+            log.error("重置密码失败", e);
             return Result.error(e.getMessage());
         }
     }

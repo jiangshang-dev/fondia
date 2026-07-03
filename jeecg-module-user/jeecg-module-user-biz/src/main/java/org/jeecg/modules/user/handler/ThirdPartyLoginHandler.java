@@ -67,6 +67,7 @@ public interface ThirdPartyLoginHandler {
         String salt = oConvertUtils.randomGen(8);
         FdUser user = new FdUser();
         user.setUsername(username);
+        user.setSalt(salt);
         user.setPassword(PasswordUtil.encrypt(username, oConvertUtils.randomGen(16), salt));
         user.setNickname(userInfo.getNickname() != null ? userInfo.getNickname() : "用户" + System.currentTimeMillis());
         user.setAvatar(userInfo.getAvatar());
