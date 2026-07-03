@@ -19,23 +19,34 @@ import org.jeecg.modules.support.enums.CsSenderType;
 import org.jeecg.modules.support.enums.CsSessionStatus;
 import org.jeecg.modules.support.mapper.FdCsMessageMapper;
 import org.jeecg.modules.support.mapper.FdCsSessionMapper;
+import org.jeecg.modules.support.service.IAiRecipeMatchService;
 import org.jeecg.modules.support.service.ICsAiService;
 import org.jeecg.modules.support.service.IFdCsConfigService;
 import org.jeecg.modules.support.service.IFdCsMessageService;
 import org.jeecg.modules.support.service.IFdCsSessionService;
 import org.jeecg.modules.support.vo.AiChatVO;
+import org.jeecg.modules.support.vo.AiRecipeCardVO;
+import org.jeecg.modules.support.vo.AiSessionSummaryVO;
 import org.jeecg.modules.support.vo.CsMessageVO;
 import org.jeecg.modules.support.vo.CsSessionAdminVO;
 import org.jeecg.modules.support.vo.CsSessionVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.alibaba.fastjson.JSONObject;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsSession> implements IFdCsSessionService {
 
@@ -54,6 +65,11 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
     @Resource
     private FdCsMessageMapper messageMapper;
 
+    @Resource
+    private IAiRecipeMatchService recipeMatchService;
+
+    public static final String AI_TAB_SOURCE = "ai_tab";
+
     @Override
     public Long resolveUserId(String authorization) {
         Result<Map<String, Object>> result = userFeignClient.getUserInfo(authorization);
@@ -70,7 +86,7 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
     @Override
     public CsSessionVO getOrCreateAiSession(String authorization, String source) {
         Long userId = resolveUserId(authorization);
-        FdCsSession session = findActiveSession(userId);
+        FdCsSession session = findActiveSession(userId, source);
         if (session == null) {
             session = createSession(userId, source, CsSessionStatus.AI);
         }
@@ -104,11 +120,95 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         FdCsMessage aiMsg = messageService.saveMessage(
                 session.getId(), CsSenderType.AI, "AI", aiResult.reply(), null);
 
+        List<AiRecipeCardVO> recipes = recipeMatchService.matchFromReply(aiResult.reply());
+
         AiChatVO vo = new AiChatVO();
         vo.setSessionId(String.valueOf(session.getId()));
         vo.setReply(aiMsg.getContent());
         vo.setTransferred(false);
+        vo.setRecipes(recipes);
         return vo;
+    }
+
+    @Override
+    public SseEmitter chatWithAiStream(String authorization, AiChatDTO dto) {
+        Long userId = resolveUserId(authorization);
+        FdCsConfig config = configService.getConfigEntity();
+        FdCsSession session = resolveSession(userId, dto.getSessionId(), dto.getSource());
+
+        messageService.saveMessage(session.getId(), CsSenderType.USER, String.valueOf(userId), dto.getContent(), null);
+
+        SseEmitter emitter = new SseEmitter(0L);
+
+        if (shouldTransfer(dto.getContent(), config.getTransferKeywords())) {
+            CompletableFuture.runAsync(() -> pushTransferStream(emitter, session, config));
+            return emitter;
+        }
+
+        FdCsSession sessionRef = session;
+        CompletableFuture.runAsync(() -> {
+            try {
+                ICsAiService.StreamChatResult streamResult = aiService.streamChat(
+                        config.getAiAppId(),
+                        dto.getContent(),
+                        sessionRef.getAiConversationId(),
+                        payload -> {
+                            try {
+                                emitter.send(SseEmitter.event().data(payload));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+
+                sessionRef.setAiConversationId(streamResult.conversationId());
+                String reply = streamResult.reply();
+                if (oConvertUtils.isEmpty(reply)) {
+                    reply = "抱歉，我暂时无法回答这个问题，您可以尝试换个问法或转接人工客服。";
+                }
+                sessionRef.setLastMessage(trimSummary(reply));
+                sessionRef.setLastMessageTime(System.currentTimeMillis());
+                updateById(sessionRef);
+                messageService.saveMessage(sessionRef.getId(), CsSenderType.AI, "AI", reply, null);
+
+                List<AiRecipeCardVO> recipes = recipeMatchService.matchFromReply(reply);
+                JSONObject meta = new JSONObject();
+                meta.put("event", "APP_META");
+                meta.put("sessionId", String.valueOf(sessionRef.getId()));
+                meta.put("recipes", recipes);
+                meta.put("transferred", false);
+                emitter.send(SseEmitter.event().data(meta.toJSONString()));
+                emitter.complete();
+            } catch (Exception e) {
+                log.error("[CsAiStream] 流式聊天失败 sessionId={}", sessionRef.getId(), e);
+                try {
+                    JSONObject err = new JSONObject();
+                    err.put("event", "APP_ERROR");
+                    err.put("message", e.getMessage() == null ? "AI服务异常" : e.getMessage());
+                    emitter.send(SseEmitter.event().data(err.toJSONString()));
+                    emitter.complete();
+                } catch (IOException ex) {
+                    emitter.completeWithError(e);
+                }
+            }
+        });
+
+        return emitter;
+    }
+
+    private void pushTransferStream(SseEmitter emitter, FdCsSession session, FdCsConfig config) {
+        try {
+            AiChatVO vo = doTransfer(session, config);
+            JSONObject meta = new JSONObject();
+            meta.put("event", "APP_TRANSFER");
+            meta.put("sessionId", vo.getSessionId());
+            meta.put("reply", vo.getReply());
+            meta.put("humanGreeting", vo.getHumanGreeting());
+            meta.put("transferred", true);
+            emitter.send(SseEmitter.event().data(meta.toJSONString()));
+            emitter.complete();
+        } catch (Exception e) {
+            emitter.completeWithError(e);
+        }
     }
 
     @Override
@@ -132,13 +232,45 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
 
     @Override
     public CsSessionVO getActiveSession(String authorization) {
+        return getActiveSession(authorization, null);
+    }
+
+    @Override
+    public CsSessionVO getActiveSession(String authorization, String source) {
         Long userId = resolveUserId(authorization);
-        FdCsSession session = findActiveSession(userId);
+        FdCsSession session = findActiveSession(userId, source);
         if (session == null) {
             return null;
         }
         FdCsConfig config = configService.getConfigEntity();
         return toSessionVO(session, config.getHumanGreeting());
+    }
+
+    @Override
+    public List<AiSessionSummaryVO> listAiSessions(String authorization, String source, Integer pageNo, Integer pageSize) {
+        Long userId = resolveUserId(authorization);
+        String src = oConvertUtils.isEmpty(source) ? AI_TAB_SOURCE : source;
+        Page<FdCsSession> page = new Page<>(pageNo, pageSize);
+        IPage<FdCsSession> result = page(page, new LambdaQueryWrapper<FdCsSession>()
+                .eq(FdCsSession::getUserId, userId)
+                .eq(FdCsSession::getSource, src)
+                .orderByDesc(FdCsSession::getLastMessageTime));
+        return result.getRecords().stream().map(this::toAiSessionSummary).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CsSessionVO createAiSession(String authorization, String source) {
+        Long userId = resolveUserId(authorization);
+        String src = oConvertUtils.isEmpty(source) ? AI_TAB_SOURCE : source;
+        FdCsSession active = findActiveSession(userId, src);
+        if (active != null) {
+            active.setStatus(CsSessionStatus.CLOSED);
+            active.setCloseTime(System.currentTimeMillis());
+            updateById(active);
+        }
+        FdCsSession session = createSession(userId, src, CsSessionStatus.AI);
+        return toSessionVO(session);
     }
 
     @Override
@@ -299,7 +431,7 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
                 return session;
             }
         }
-        FdCsSession active = findActiveSession(userId);
+        FdCsSession active = findActiveSession(userId, source);
         if (active != null) {
             return active;
         }
@@ -307,12 +439,20 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
     }
 
     private FdCsSession findActiveSession(Long userId) {
-        return getOne(new LambdaQueryWrapper<FdCsSession>()
+        return findActiveSession(userId, null);
+    }
+
+    private FdCsSession findActiveSession(Long userId, String source) {
+        LambdaQueryWrapper<FdCsSession> wrapper = new LambdaQueryWrapper<FdCsSession>()
                 .eq(FdCsSession::getUserId, userId)
                 .in(FdCsSession::getStatus,
                         CsSessionStatus.AI, CsSessionStatus.WAITING, CsSessionStatus.CHATTING)
                 .orderByDesc(FdCsSession::getCreateTime)
-                .last("LIMIT 1"));
+                .last("LIMIT 1");
+        if (oConvertUtils.isNotEmpty(source)) {
+            wrapper.eq(FdCsSession::getSource, source);
+        }
+        return getOne(wrapper);
     }
 
     private FdCsSession createSession(Long userId, String source, String status) {
@@ -390,6 +530,15 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         BeanUtils.copyProperties(message, vo);
         vo.setId(String.valueOf(message.getId()));
         vo.setSessionId(String.valueOf(message.getSessionId()));
+        return vo;
+    }
+
+    private AiSessionSummaryVO toAiSessionSummary(FdCsSession session) {
+        AiSessionSummaryVO vo = new AiSessionSummaryVO();
+        vo.setId(String.valueOf(session.getId()));
+        vo.setLastMessage(session.getLastMessage());
+        vo.setLastMessageTime(session.getLastMessageTime());
+        vo.setSource(session.getSource());
         return vo;
     }
 }

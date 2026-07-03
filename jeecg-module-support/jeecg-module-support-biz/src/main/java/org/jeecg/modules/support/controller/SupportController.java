@@ -15,11 +15,14 @@ import org.jeecg.modules.support.service.IFdCsFaqService;
 import org.jeecg.modules.support.service.IFdCsQuickEntryService;
 import org.jeecg.modules.support.service.IFdCsSessionService;
 import org.jeecg.modules.support.vo.AiChatVO;
+import org.jeecg.modules.support.vo.AiSessionSummaryVO;
 import org.jeecg.modules.support.vo.CsConfigVO;
 import org.jeecg.modules.support.vo.CsMessageVO;
 import org.jeecg.modules.support.vo.CsSessionVO;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -61,11 +64,34 @@ public class SupportController {
         return Result.OK(quickEntryService.listEnabled());
     }
 
-    @Operation(summary = "AI聊天")
-    @PostMapping("/ai/chat")
-    public Result<AiChatVO> aiChat(@RequestHeader("Authorization") String authorization,
-                                   @Validated @RequestBody AiChatDTO dto) {
-        return Result.OK(sessionService.chatWithAi(authorization, dto));
+    @Operation(summary = "AI聊天（SSE流式，与 Airag /airag/chat/send 协议一致）")
+    @PostMapping(value = "/ai/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter aiChat(@RequestHeader("Authorization") String authorization,
+                             @Validated @RequestBody AiChatDTO dto) {
+        return sessionService.chatWithAiStream(authorization, dto);
+    }
+
+    @Operation(summary = "AI对话历史会话列表")
+    @GetMapping("/ai/sessions")
+    public Result<List<AiSessionSummaryVO>> aiSessions(@RequestHeader("Authorization") String authorization,
+                                                       @RequestParam(defaultValue = "ai_tab") String source,
+                                                       @RequestParam(defaultValue = "1") Integer pageNo,
+                                                       @RequestParam(defaultValue = "20") Integer pageSize) {
+        return Result.OK(sessionService.listAiSessions(authorization, source, pageNo, pageSize));
+    }
+
+    @Operation(summary = "新建AI对话会话")
+    @PostMapping("/ai/session/new")
+    public Result<CsSessionVO> newAiSession(@RequestHeader("Authorization") String authorization,
+                                            @RequestParam(defaultValue = "ai_tab") String source) {
+        return Result.OK(sessionService.createAiSession(authorization, source));
+    }
+
+    @Operation(summary = "获取AI Tab进行中的会话")
+    @GetMapping("/ai/session/active")
+    public Result<CsSessionVO> activeAiSession(@RequestHeader("Authorization") String authorization,
+                                               @RequestParam(defaultValue = "ai_tab") String source) {
+        return Result.OK(sessionService.getActiveSession(authorization, source));
     }
 
     @Operation(summary = "转接人工客服")

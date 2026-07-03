@@ -69,14 +69,19 @@ CREATE TABLE IF NOT EXISTS `fd_cs_message` (
   KEY `idx_cs_message_session_time` (`session_id`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客服消息';
 
--- 默认配置
-INSERT INTO `fd_cs_config` (`id`, `welcome_title`, `welcome_tag`, `welcome_desc`, `human_greeting`, `privacy_tip`, `transfer_keywords`, `update_time`)
+-- 默认配置（含 AI 食谱应用 ID，可在管理后台「客服配置」修改）
+INSERT INTO `fd_cs_config` (`id`, `welcome_title`, `welcome_tag`, `welcome_desc`, `human_greeting`, `privacy_tip`, `ai_app_id`, `transfer_keywords`, `update_time`)
 VALUES (1, 'Hi，小厨粉', '智能自助',
         '我是小厨专属客服，有什么可以帮您的？您可以通过下方自助服务或点击底部直接与我沟通。',
         '您好，我是人工客服小美，很高兴为您服务！请问有什么可以帮您的？🌸',
         '小厨致力保护您的隐私，本次通话已加密。',
+        '2072629675695808513',
         '人工,转人工,人工客服,召唤人工', UNIX_TIMESTAMP() * 1000)
 ON DUPLICATE KEY UPDATE update_time = VALUES(update_time);
+
+-- 已有库补全 AI 应用 ID（未配置时写入）
+UPDATE `fd_cs_config` SET `ai_app_id` = '2072629675695808513'
+WHERE `id` = 1 AND (`ai_app_id` IS NULL OR `ai_app_id` = '');
 
 -- 默认FAQ
 INSERT INTO `fd_cs_faq` (`id`, `question`, `answer`, `sort_no`, `status`, `create_time`, `update_time`) VALUES

@@ -1,5 +1,15 @@
 [
   {
+    "id": "jeecg-fondia-airag-app",
+    "order": -11,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/airag/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-system"
+  },
+  {
     "id": "jeecg-fondia-user-admin",
     "order": -10,
     "predicates": [{

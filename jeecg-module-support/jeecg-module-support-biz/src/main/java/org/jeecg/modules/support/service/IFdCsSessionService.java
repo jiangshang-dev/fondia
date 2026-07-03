@@ -7,9 +7,11 @@ import org.jeecg.modules.support.dto.SendMessageDTO;
 import org.jeecg.modules.support.dto.SessionCreateDTO;
 import org.jeecg.modules.support.entity.FdCsSession;
 import org.jeecg.modules.support.vo.AiChatVO;
+import org.jeecg.modules.support.vo.AiSessionSummaryVO;
 import org.jeecg.modules.support.vo.CsMessageVO;
 import org.jeecg.modules.support.vo.CsSessionAdminVO;
 import org.jeecg.modules.support.vo.CsSessionVO;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -21,9 +23,17 @@ public interface IFdCsSessionService extends IService<FdCsSession> {
 
     AiChatVO chatWithAi(String authorization, AiChatDTO dto);
 
+    SseEmitter chatWithAiStream(String authorization, AiChatDTO dto);
+
     CsSessionVO transferToHuman(String authorization, SessionCreateDTO dto);
 
     CsSessionVO getActiveSession(String authorization);
+
+    CsSessionVO getActiveSession(String authorization, String source);
+
+    List<AiSessionSummaryVO> listAiSessions(String authorization, String source, Integer pageNo, Integer pageSize);
+
+    CsSessionVO createAiSession(String authorization, String source);
 
     List<CsMessageVO> listMessages(String authorization, Long sessionId, Integer pageNo, Integer pageSize);
 

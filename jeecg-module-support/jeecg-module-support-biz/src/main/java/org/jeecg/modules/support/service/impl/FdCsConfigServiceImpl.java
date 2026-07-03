@@ -28,6 +28,7 @@ public class FdCsConfigServiceImpl extends ServiceImpl<FdCsConfigMapper, FdCsCon
                     .setWelcomeDesc("我是小厨专属客服，有什么可以帮您的？")
                     .setHumanGreeting("您好，我是人工客服小美，很高兴为您服务！请问有什么可以帮您的？")
                     .setPrivacyTip("小厨致力保护您的隐私，本次通话已加密。")
+                    .setAiAppId("2072629675695808513")
                     .setTransferKeywords("人工,转人工,人工客服,召唤人工");
             configMapper.insert(config);
         }
