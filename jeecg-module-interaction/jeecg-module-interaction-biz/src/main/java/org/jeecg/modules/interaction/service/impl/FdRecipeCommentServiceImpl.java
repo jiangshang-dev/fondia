@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.modules.interaction.api.IUserBriefResolver;
 import org.jeecg.modules.interaction.api.InteractionUserBrief;
@@ -32,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class FdRecipeCommentServiceImpl extends ServiceImpl<FdRecipeCommentMapper, FdRecipeComment>
         implements IFdRecipeCommentService {
@@ -199,6 +201,7 @@ public class FdRecipeCommentServiceImpl extends ServiceImpl<FdRecipeCommentMappe
 
     private void applyModeration(FdRecipeComment comment) {
         ModerationResult result = contentModerationService.moderate(comment.getContent());
+        log.info("评论 {} 内容审核结果: {}", comment.getId(), result.getReason());
         if (result.isPass()) {
             comment.setStatus(CommentStatusEnum.PUBLISHED.getCode());
         } else if (result.isReject()) {
