@@ -69,6 +69,7 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
     private IAiRecipeMatchService recipeMatchService;
 
     public static final String AI_TAB_SOURCE = "ai_tab";
+    public static final String CS_GENERAL_SOURCE = "general";
 
     @Override
     public Long resolveUserId(String authorization) {
@@ -86,9 +87,10 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
     @Override
     public CsSessionVO getOrCreateAiSession(String authorization, String source) {
         Long userId = resolveUserId(authorization);
-        FdCsSession session = findActiveSession(userId, source);
+        String channel = oConvertUtils.isEmpty(source) ? AI_TAB_SOURCE : source;
+        FdCsSession session = findActiveSession(userId, channel);
         if (session == null) {
-            session = createSession(userId, source, CsSessionStatus.AI);
+            session = createSession(userId, channel, CsSessionStatus.AI);
         }
         return toSessionVO(session);
     }
@@ -216,14 +218,15 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
     public CsSessionVO transferToHuman(String authorization, SessionCreateDTO dto) {
         Long userId = resolveUserId(authorization);
         FdCsConfig config = configService.getConfigEntity();
-        FdCsSession session = findActiveSession(userId);
+        String channel = resolveChannelSource(dto != null ? dto.getSource() : null);
+        FdCsSession session = findActiveSession(userId, channel);
+        if (session != null && AI_TAB_SOURCE.equals(session.getSource())) {
+            session = null;
+        }
         if (session == null) {
-            session = createSession(userId, dto != null ? dto.getSource() : "general", CsSessionStatus.WAITING);
+            session = createSession(userId, channel, CsSessionStatus.WAITING);
         } else {
             session.setStatus(CsSessionStatus.WAITING);
-            if (dto != null && oConvertUtils.isNotEmpty(dto.getSource())) {
-                session.setSource(dto.getSource());
-            }
             updateById(session);
         }
         insertHumanGreeting(session, config);
@@ -232,13 +235,14 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
 
     @Override
     public CsSessionVO getActiveSession(String authorization) {
-        return getActiveSession(authorization, null);
+        return getActiveSession(authorization, CS_GENERAL_SOURCE);
     }
 
     @Override
     public CsSessionVO getActiveSession(String authorization, String source) {
         Long userId = resolveUserId(authorization);
-        FdCsSession session = findActiveSession(userId, source);
+        String channel = resolveChannelSource(source);
+        FdCsSession session = findActiveSession(userId, channel);
         if (session == null) {
             return null;
         }
@@ -424,33 +428,58 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
     }
 
     private FdCsSession resolveSession(Long userId, String sessionId, String source) {
+        String channel = resolveChannelSource(source);
         if (oConvertUtils.isNotEmpty(sessionId)) {
             FdCsSession session = getById(Long.valueOf(sessionId));
             if (session != null && userId.equals(session.getUserId())
-                    && !CsSessionStatus.CLOSED.equals(session.getStatus())) {
+                    && !CsSessionStatus.CLOSED.equals(session.getStatus())
+                    && isSessionInChannel(session, channel)) {
                 return session;
             }
         }
-        FdCsSession active = findActiveSession(userId, source);
+        FdCsSession active = findActiveSession(userId, channel);
         if (active != null) {
             return active;
         }
-        return createSession(userId, source, CsSessionStatus.AI);
+        return createSession(userId, channel, CsSessionStatus.AI);
     }
 
-    private FdCsSession findActiveSession(Long userId) {
-        return findActiveSession(userId, null);
+    private String resolveChannelSource(String source) {
+        if (AI_TAB_SOURCE.equals(source)) {
+            return AI_TAB_SOURCE;
+        }
+        if (oConvertUtils.isEmpty(source)) {
+            return CS_GENERAL_SOURCE;
+        }
+        return source;
     }
 
-    private FdCsSession findActiveSession(Long userId, String source) {
+    private boolean isSessionInChannel(FdCsSession session, String channel) {
+        if (AI_TAB_SOURCE.equals(channel)) {
+            return AI_TAB_SOURCE.equals(session.getSource());
+        }
+        if (AI_TAB_SOURCE.equals(session.getSource())) {
+            return false;
+        }
+        if (CS_GENERAL_SOURCE.equals(channel)) {
+            return true;
+        }
+        return channel.equals(session.getSource());
+    }
+
+    private FdCsSession findActiveSession(Long userId, String channel) {
         LambdaQueryWrapper<FdCsSession> wrapper = new LambdaQueryWrapper<FdCsSession>()
                 .eq(FdCsSession::getUserId, userId)
                 .in(FdCsSession::getStatus,
                         CsSessionStatus.AI, CsSessionStatus.WAITING, CsSessionStatus.CHATTING)
-                .orderByDesc(FdCsSession::getCreateTime)
+                .orderByDesc(FdCsSession::getLastMessageTime)
                 .last("LIMIT 1");
-        if (oConvertUtils.isNotEmpty(source)) {
-            wrapper.eq(FdCsSession::getSource, source);
+        if (AI_TAB_SOURCE.equals(channel)) {
+            wrapper.eq(FdCsSession::getSource, AI_TAB_SOURCE);
+        } else if (CS_GENERAL_SOURCE.equals(channel)) {
+            wrapper.ne(FdCsSession::getSource, AI_TAB_SOURCE);
+        } else {
+            wrapper.eq(FdCsSession::getSource, channel);
         }
         return getOne(wrapper);
     }
@@ -460,7 +489,7 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         FdCsSession session = new FdCsSession()
                 .setUserId(userId)
                 .setStatus(status)
-                .setSource(oConvertUtils.isEmpty(source) ? "general" : source)
+                .setSource(oConvertUtils.isEmpty(source) ? CS_GENERAL_SOURCE : source)
                 .setUserUnread(0)
                 .setAgentUnread(0)
                 .setCreateTime(now)

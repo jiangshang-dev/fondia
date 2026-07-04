@@ -101,10 +101,11 @@ public class SupportController {
         return Result.OK(sessionService.transferToHuman(authorization, dto));
     }
 
-    @Operation(summary = "获取当前进行中的会话")
+    @Operation(summary = "获取当前进行中的客服会话（不含 AI Tab）")
     @GetMapping("/session/active")
-    public Result<CsSessionVO> activeSession(@RequestHeader("Authorization") String authorization) {
-        return Result.OK(sessionService.getActiveSession(authorization));
+    public Result<CsSessionVO> activeSession(@RequestHeader("Authorization") String authorization,
+                                             @RequestParam(defaultValue = "general") String source) {
+        return Result.OK(sessionService.getActiveSession(authorization, source));
     }
 
     @Operation(summary = "会话历史消息")
