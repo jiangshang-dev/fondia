@@ -58,4 +58,7 @@ public class FdMemberPlan extends FdMemberAdminEntity {
     @Schema(description = "Google Play 商品 ID")
     private String googleProductId;
 
+    @Schema(description = "AI营养咨询每日次数，0=不限，NULL=沿用免费额度")
+    private Integer aiNutritionDailyLimit;
+
 }
