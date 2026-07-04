@@ -3,6 +3,7 @@ package org.jeecg.modules.member.service.app.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
 import org.jeecg.common.exception.JeecgBootException;
+import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.member.entity.FdMemberOrder;
 import org.jeecg.modules.member.entity.FdMemberPlan;
 import org.jeecg.modules.member.entity.FdMemberSubscription;
@@ -35,6 +36,18 @@ public class MemberPaymentAppServiceImpl implements IMemberPaymentAppService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public FdMemberOrder confirmPaid(String orderNo) {
+        return doConfirmPaid(orderNo, null, null, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public FdMemberOrder confirmPaidFromPayment(String orderNo, String externalTradeNo,
+                                                String payChannel, String externalPayload) {
+        return doConfirmPaid(orderNo, externalTradeNo, payChannel, externalPayload);
+    }
+
+    private FdMemberOrder doConfirmPaid(String orderNo, String externalTradeNo,
+                                        String payChannelOverride, String externalPayload) {
         LambdaQueryWrapper<FdMemberOrder> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(FdMemberOrder::getOrderNo, orderNo);
         FdMemberOrder order = orderService.getOne(wrapper, false);
@@ -51,9 +64,11 @@ public class MemberPaymentAppServiceImpl implements IMemberPaymentAppService {
         }
 
         long now = System.currentTimeMillis();
+        String channel = oConvertUtils.isNotEmpty(payChannelOverride)
+                ? payChannelOverride
+                : (order.getPayChannel() != null ? order.getPayChannel() : "PAYMENT");
         FdMemberSubscription sub = subscriptionGrantService.grantMemberDays(
-                order.getUserId(), plan.getDurationDays(), plan.getPlanCode(),
-                order.getPayChannel() != null ? order.getPayChannel() : "PAYMENT");
+                order.getUserId(), plan.getDurationDays(), plan.getPlanCode(), channel);
 
         if (plan.getBonusPoints() != null && plan.getBonusPoints() > 0) {
             pointsCoreService.addPoints(order.getUserId(), plan.getBonusPoints(),
@@ -63,6 +78,9 @@ public class MemberPaymentAppServiceImpl implements IMemberPaymentAppService {
         order.setPayStatus(1);
         order.setPaidTime(now);
         order.setSubscriptionId(sub.getId());
+        if (oConvertUtils.isNotEmpty(payChannelOverride)) {
+            order.setPayChannel(payChannelOverride);
+        }
         order.setUpdateTime(now);
         orderService.updateById(order);
 
@@ -71,10 +89,14 @@ public class MemberPaymentAppServiceImpl implements IMemberPaymentAppService {
         payment.setOrderNo(order.getOrderNo());
         payment.setOrderType("MEMBER");
         payment.setUserId(order.getUserId());
-        payment.setPayChannel(order.getPayChannel());
+        payment.setPayChannel(oConvertUtils.isNotEmpty(payChannelOverride)
+                ? payChannelOverride
+                : (order.getPayChannel() != null ? order.getPayChannel() : "PAYMENT"));
         payment.setAmount(order.getAmount());
         payment.setCurrency(order.getCurrency());
         payment.setPayStatus(1);
+        payment.setExternalTradeNo(externalTradeNo);
+        payment.setExternalPayload(externalPayload);
         payment.setNotifyTime(now);
         payment.setCreateTime(now);
         payment.setUpdateTime(now);

@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.api.vo.Result;
+import org.jeecg.modules.member.config.FondiaMemberPaymentProperties;
 import org.jeecg.modules.member.entity.FdMemberOrder;
 import org.jeecg.modules.member.entity.FdMemberPlan;
 import org.jeecg.modules.member.entity.FdMemberSubscription;
@@ -36,6 +37,8 @@ public class MemberAppController {
     private IMemberPaymentAppService paymentAppService;
     @Resource
     private MemberAuthHelper authHelper;
+    @Resource
+    private FondiaMemberPaymentProperties memberPaymentProperties;
 
     @Operation(summary = "可购会员套餐列表")
     @GetMapping("/plans")
@@ -78,11 +81,14 @@ public class MemberAppController {
         return Result.OK(orderAppService.createOrder(userId, planId, payChannel, clientPlatform));
     }
 
-    @Operation(summary = "支付成功确认（开发/回调用）")
+    @Operation(summary = "支付成功确认（仅开发环境，生产请走 /payment/verify 或渠道回调）")
     @PostMapping("/order/pay/confirm")
     public Result<FdMemberOrder> confirmPay(@RequestHeader("Authorization") String authorization,
                                             @RequestParam String orderNo) {
         authHelper.resolveUserId(authorization);
+        if (!memberPaymentProperties.isAllowClientConfirm()) {
+            return Result.error("请完成支付流程");
+        }
         return Result.OK(paymentAppService.confirmPaid(orderNo));
     }
 }

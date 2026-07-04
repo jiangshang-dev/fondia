@@ -52,4 +52,10 @@ public class FdMemberPlan extends FdMemberAdminEntity {
     @Schema(description = "状态：0下架 1上架")
     private Integer status;
 
+    @Schema(description = "Apple IAP 商品 ID")
+    private String appleProductId;
+
+    @Schema(description = "Google Play 商品 ID")
+    private String googleProductId;
+
 }

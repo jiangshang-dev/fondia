@@ -85,6 +85,7 @@
     <module>jeecg-module-support</module>
     <module>jeecg-module-search</module>
     <module>jeecg-module-member</module>
+    <module>jeecg-module-payment</module>
   </modules>
   <repositories>
     <repository>

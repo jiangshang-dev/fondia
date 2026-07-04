@@ -209,6 +209,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/member/**", "anon");
         filterChainDefinitionMap.put("/member/points/**", "anon");
         filterChainDefinitionMap.put("/support/**", "anon");
+        filterChainDefinitionMap.put("/payment/**", "anon");
 
         //错误路径排除
         filterChainDefinitionMap.put("/error", "anon");

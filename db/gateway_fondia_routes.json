@@ -95,6 +95,16 @@
     "uri": "lb://jeecg-member"
   },
   {
+    "id": "jeecg-fondia-payment-app",
+    "order": -2,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/payment/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-payment"
+  },
+  {
     "id": "jeecg-fondia-member-admin",
     "order": -2,
     "predicates": [{

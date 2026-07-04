@@ -1,0 +1,35 @@
+server:
+  port: 7009
+
+spring:
+  application:
+    name: jeecg-payment
+  cloud:
+    nacos:
+      config:
+        server-addr: @config.server-addr@
+        group: @config.group@
+        namespace: @config.namespace@
+        username: @config.username@
+        password: @config.password@
+      discovery:
+        server-addr: ${spring.cloud.nacos.config.server-addr}
+        group: @config.group@
+        namespace: @config.namespace@
+        username: @config.username@
+        password: @config.password@
+  config:
+    import:
+      - optional:nacos:jeecg.yaml
+      - optional:nacos:jeecg-@profile.name@.yaml
+
+fondia:
+  payment:
+    internal-secret: change-me-payment-internal
+    mock-enabled: true
+    alipay:
+      app-id: ''
+      private-key: ''
+      alipay-public-key: ''
+      notify-url: http://192.168.18.198:9999/payment/notify/alipay
+      gateway-url: https://openapi-sandbox.dl.alipaydev.com/gateway.do

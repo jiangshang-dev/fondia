@@ -22,3 +22,8 @@ spring:
     import:
       - optional:nacos:jeecg.yaml
       - optional:nacos:jeecg-@profile.name@.yaml
+
+fondia:
+  payment:
+    internal-secret: change-me-payment-internal
+    allow-client-confirm: false
