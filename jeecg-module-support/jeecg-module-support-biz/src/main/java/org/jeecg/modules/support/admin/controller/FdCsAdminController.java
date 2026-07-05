@@ -5,11 +5,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.aspect.annotation.AutoLog;
 import org.jeecg.common.constant.CommonConstant;
-import org.jeecg.common.system.vo.LoginUser;
+import org.jeecg.modules.support.admin.util.CsAdminLoginHelper;
 import org.jeecg.modules.support.dto.SendMessageDTO;
 import org.jeecg.modules.support.entity.FdCsConfig;
 import org.jeecg.modules.support.entity.FdCsSession;
@@ -33,6 +32,9 @@ public class FdCsAdminController {
 
     @Resource
     private IFdCsSessionService sessionService;
+
+    @Resource
+    private CsAdminLoginHelper adminLoginHelper;
 
     @Operation(summary = "获取客服全局配置")
     @GetMapping("/config")
@@ -60,8 +62,8 @@ public class FdCsAdminController {
     @PostMapping("/session/sendMessage")
     public Result<CsMessageVO> sendMessage(@RequestParam String sessionId,
                                            @Validated @RequestBody SendMessageDTO dto) {
-        LoginUser loginUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
-        return Result.OK(sessionService.sendAgentMessage(Long.parseLong(sessionId), loginUser.getId(), dto));
+        return Result.OK(sessionService.sendAgentMessage(
+                Long.parseLong(sessionId), adminLoginHelper.requireLoginUser().getId(), dto));
     }
 
     @AutoLog(value = "客服接入会话", operateType = CommonConstant.OPERATE_TYPE_3)

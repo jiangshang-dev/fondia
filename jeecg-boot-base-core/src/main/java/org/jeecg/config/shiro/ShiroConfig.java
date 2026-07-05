@@ -262,6 +262,8 @@ public class ShiroConfig {
         registration.addUrlPatterns("/drag/onlDragDatasetHead/generateChartSse");
         registration.addUrlPatterns("/drag/onlDragDatasetHead/updateChartOptSse");
         registration.addUrlPatterns("/drag/onlDragDatasetHead/generateSqlSse");
+        // Fondia 客服 AI 流式（SSE 异步派发，需扩展 Shiro Filter 的 async 支持）
+        registration.addUrlPatterns("/support/ai/chat");
         //支持异步
         registration.setAsyncSupported(true);
         registration.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC);

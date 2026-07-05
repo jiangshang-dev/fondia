@@ -89,6 +89,14 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
         return Result.OK("状态更新成功");
     }
 
+    @AutoLog(value = "重建菜谱搜索索引", operateType = CommonConstant.OPERATE_TYPE_3)
+    @Operation(summary = "全量重建菜谱搜索索引（MySQL 有数据但 ES 搜不到时调用）")
+    @PostMapping("/rebuildSearchIndex")
+    public Result<String> rebuildSearchIndex() {
+        int count = service.rebuildAllRecipeSearchIndex();
+        return Result.OK("已向 RabbitMQ 发送 " + count + " 条索引同步消息，请确认 jeecg-search 与 RabbitMQ 正常运行");
+    }
+
     @AutoLog(value = "删除菜谱", operateType = CommonConstant.OPERATE_TYPE_4)
     @Operation(summary = "删除菜谱")
     @DeleteMapping("/delete")

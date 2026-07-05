@@ -33,10 +33,10 @@ public class CsAiServiceImpl implements ICsAiService {
     private String aiChatBaseUrl;
 
     @Override
-    public AiChatResult chat(String appId, String content, String conversationId) {
+    public AiChatResult chat(String appId, String content, String conversationId, String authorization, Long userId) {
         StringBuilder replyBuilder = new StringBuilder();
         String[] conversationHolder = {conversationId};
-        StreamChatResult result = streamChat(appId, content, conversationId, payload -> {
+        StreamChatResult result = streamChat(appId, content, conversationId, authorization, userId, payload -> {
             appendMessageFromEvent(payload, replyBuilder, conversationHolder);
         });
         String reply = replyBuilder.toString().trim();
@@ -51,7 +51,8 @@ public class CsAiServiceImpl implements ICsAiService {
     }
 
     @Override
-    public StreamChatResult streamChat(String appId, String content, String conversationId, Consumer<String> onEvent) {
+    public StreamChatResult streamChat(String appId, String content, String conversationId, String authorization,
+                                       Long userId, Consumer<String> onEvent) {
         if (oConvertUtils.isEmpty(appId)) {
             throw new JeecgBootException("未配置AI应用ID，请在管理后台「客服配置」中设置 aiAppId");
         }
@@ -77,6 +78,8 @@ public class CsAiServiceImpl implements ICsAiService {
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
             conn.setRequestProperty("Accept", "text/event-stream, application/json");
+            applyAuthorization(conn, authorization);
+            applyCacheUser(conn, userId);
 
             try (OutputStream os = conn.getOutputStream()) {
                 os.write(requestJson.getBytes(StandardCharsets.UTF_8));
@@ -148,6 +151,24 @@ public class CsAiServiceImpl implements ICsAiService {
         if (data.containsKey("content")) {
             replyBuilder.append(data.getString("content"));
         }
+    }
+
+    private static void applyCacheUser(HttpURLConnection conn, Long userId) {
+        if (userId == null) {
+            return;
+        }
+        conn.setRequestProperty("X-Airag-Cache-User", "fondia_" + userId);
+    }
+
+    private static void applyAuthorization(HttpURLConnection conn, String authorization) {
+        if (oConvertUtils.isEmpty(authorization)) {
+            return;
+        }
+        String token = authorization.trim();
+        if (!token.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            token = "Bearer " + token;
+        }
+        conn.setRequestProperty("Authorization", token);
     }
 
     private String resolveChatUrl() {

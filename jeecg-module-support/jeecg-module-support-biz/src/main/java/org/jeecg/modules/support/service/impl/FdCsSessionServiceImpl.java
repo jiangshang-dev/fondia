@@ -19,6 +19,7 @@ import org.jeecg.modules.support.enums.CsSenderType;
 import org.jeecg.modules.support.enums.CsSessionStatus;
 import org.jeecg.modules.support.mapper.FdCsMessageMapper;
 import org.jeecg.modules.support.mapper.FdCsSessionMapper;
+import org.jeecg.modules.support.service.CsAiContextBuilder;
 import org.jeecg.modules.support.service.IAiRecipeMatchService;
 import org.jeecg.modules.support.service.ICsAiService;
 import org.jeecg.modules.support.service.IFdCsConfigService;
@@ -31,6 +32,7 @@ import org.jeecg.modules.support.vo.CsMessageVO;
 import org.jeecg.modules.support.vo.CsSessionAdminVO;
 import org.jeecg.modules.support.vo.CsSessionVO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -41,8 +43,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+
+import static org.jeecg.modules.support.config.CsAiAsyncExecutorConfig.CS_AI_EXECUTOR;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,6 +71,10 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
 
     @Resource
     private IAiRecipeMatchService recipeMatchService;
+
+    @Resource
+    @Qualifier(CS_AI_EXECUTOR)
+    private Executor csAiTaskExecutor;
 
     public static final String AI_TAB_SOURCE = "ai_tab";
     public static final String CS_GENERAL_SOURCE = "general";
@@ -102,16 +110,20 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         FdCsConfig config = configService.getConfigEntity();
         FdCsSession session = resolveSession(userId, dto.getSessionId(), dto.getSource());
 
+        List<FdCsMessage> history = listRecentMessages(session.getId());
         messageService.saveMessage(session.getId(), CsSenderType.USER, String.valueOf(userId), dto.getContent(), null);
 
         if (shouldTransfer(dto.getContent(), config.getTransferKeywords())) {
             return doTransfer(session, config);
         }
 
+        String aiInput = CsAiContextBuilder.buildPrompt(history, dto.getContent());
         ICsAiService.AiChatResult aiResult = aiService.chat(
                 config.getAiAppId(),
-                dto.getContent(),
-                session.getAiConversationId()
+                aiInput,
+                session.getAiConversationId(),
+                authorization,
+                userId
         );
 
         session.setAiConversationId(aiResult.conversationId());
@@ -122,7 +134,8 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         FdCsMessage aiMsg = messageService.saveMessage(
                 session.getId(), CsSenderType.AI, "AI", aiResult.reply(), null);
 
-        List<AiRecipeCardVO> recipes = recipeMatchService.matchFromReply(aiResult.reply());
+        List<AiRecipeCardVO> recipes = recipeMatchService.matchForChat(
+                session.getId(), dto.getContent(), aiResult.reply());
 
         AiChatVO vo = new AiChatVO();
         vo.setSessionId(String.valueOf(session.getId()));
@@ -138,67 +151,84 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         FdCsConfig config = configService.getConfigEntity();
         FdCsSession session = resolveSession(userId, dto.getSessionId(), dto.getSource());
 
+        List<FdCsMessage> history = listRecentMessages(session.getId());
         messageService.saveMessage(session.getId(), CsSenderType.USER, String.valueOf(userId), dto.getContent(), null);
 
         SseEmitter emitter = new SseEmitter(0L);
 
-        if (shouldTransfer(dto.getContent(), config.getTransferKeywords())) {
-            CompletableFuture.runAsync(() -> pushTransferStream(emitter, session, config));
+        // 主线程提前捕获，异步内禁止访问 Shiro / RequestContextHolder
+        final Long sessionId = session.getId();
+        final String aiAppId = config.getAiAppId();
+        final String transferKeywords = config.getTransferKeywords();
+        final String aiConversationId = session.getAiConversationId();
+        final String userMessage = dto.getContent();
+
+        if (shouldTransfer(userMessage, transferKeywords)) {
+            csAiTaskExecutor.execute(() -> pushTransferStream(emitter, sessionId, config));
             return emitter;
         }
 
-        FdCsSession sessionRef = session;
-        CompletableFuture.runAsync(() -> {
-            try {
-                ICsAiService.StreamChatResult streamResult = aiService.streamChat(
-                        config.getAiAppId(),
-                        dto.getContent(),
-                        sessionRef.getAiConversationId(),
-                        payload -> {
-                            try {
-                                emitter.send(SseEmitter.event().data(payload));
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
-
-                sessionRef.setAiConversationId(streamResult.conversationId());
-                String reply = streamResult.reply();
-                if (oConvertUtils.isEmpty(reply)) {
-                    reply = "抱歉，我暂时无法回答这个问题，您可以尝试换个问法或转接人工客服。";
-                }
-                sessionRef.setLastMessage(trimSummary(reply));
-                sessionRef.setLastMessageTime(System.currentTimeMillis());
-                updateById(sessionRef);
-                messageService.saveMessage(sessionRef.getId(), CsSenderType.AI, "AI", reply, null);
-
-                List<AiRecipeCardVO> recipes = recipeMatchService.matchFromReply(reply);
-                JSONObject meta = new JSONObject();
-                meta.put("event", "APP_META");
-                meta.put("sessionId", String.valueOf(sessionRef.getId()));
-                meta.put("recipes", recipes);
-                meta.put("transferred", false);
-                emitter.send(SseEmitter.event().data(meta.toJSONString()));
-                emitter.complete();
-            } catch (Exception e) {
-                log.error("[CsAiStream] 流式聊天失败 sessionId={}", sessionRef.getId(), e);
-                try {
-                    JSONObject err = new JSONObject();
-                    err.put("event", "APP_ERROR");
-                    err.put("message", e.getMessage() == null ? "AI服务异常" : e.getMessage());
-                    emitter.send(SseEmitter.event().data(err.toJSONString()));
-                    emitter.complete();
-                } catch (IOException ex) {
-                    emitter.completeWithError(e);
-                }
-            }
-        });
+        final String aiInput = CsAiContextBuilder.buildPrompt(history, userMessage);
+        csAiTaskExecutor.execute(() -> runAiStreamTask(
+                emitter, sessionId, aiAppId, aiInput, aiConversationId, authorization, userId, userMessage));
 
         return emitter;
     }
 
-    private void pushTransferStream(SseEmitter emitter, FdCsSession session, FdCsConfig config) {
+    /**
+     * AI 流式任务：仅使用入参，不访问 SecurityUtils / HttpServletRequest。
+     */
+    private void runAiStreamTask(SseEmitter emitter, Long sessionId, String aiAppId, String aiInput,
+                                 String aiConversationId, String authorization, Long userId, String userMessage) {
         try {
+            ICsAiService.StreamChatResult streamResult = aiService.streamChat(
+                    aiAppId,
+                    aiInput,
+                    aiConversationId,
+                    authorization,
+                    userId,
+                    payload -> {
+                        try {
+                            emitter.send(SseEmitter.event().data(payload));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+
+            FdCsSession sessionRef = getById(sessionId);
+            if (sessionRef == null) {
+                throw new JeecgBootException("会话不存在");
+            }
+            sessionRef.setAiConversationId(streamResult.conversationId());
+            String reply = streamResult.reply();
+            if (oConvertUtils.isEmpty(reply)) {
+                reply = "抱歉，我暂时无法回答这个问题，您可以尝试换个问法或转接人工客服。";
+            }
+            sessionRef.setLastMessage(trimSummary(reply));
+            sessionRef.setLastMessageTime(System.currentTimeMillis());
+            updateById(sessionRef);
+            messageService.saveMessage(sessionId, CsSenderType.AI, "AI", reply, null);
+
+            List<AiRecipeCardVO> recipes = recipeMatchService.matchForChat(sessionId, userMessage, reply);
+            JSONObject meta = new JSONObject();
+            meta.put("event", "APP_META");
+            meta.put("sessionId", String.valueOf(sessionId));
+            meta.put("recipes", recipes);
+            meta.put("transferred", false);
+            emitter.send(SseEmitter.event().data(meta.toJSONString()));
+            emitter.complete();
+        } catch (Exception e) {
+            log.error("[CsAiStream] 流式聊天失败 sessionId={}", sessionId, e);
+            sendStreamError(emitter, e);
+        }
+    }
+
+    private void pushTransferStream(SseEmitter emitter, Long sessionId, FdCsConfig config) {
+        try {
+            FdCsSession session = getById(sessionId);
+            if (session == null) {
+                throw new JeecgBootException("会话不存在");
+            }
             AiChatVO vo = doTransfer(session, config);
             JSONObject meta = new JSONObject();
             meta.put("event", "APP_TRANSFER");
@@ -209,7 +239,25 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
             emitter.send(SseEmitter.event().data(meta.toJSONString()));
             emitter.complete();
         } catch (Exception e) {
-            emitter.completeWithError(e);
+            log.error("[CsAiStream] 转人工流式失败 sessionId={}", sessionId, e);
+            sendStreamError(emitter, e);
+        }
+    }
+
+    private void sendStreamError(SseEmitter emitter, Exception e) {
+        try {
+            JSONObject err = new JSONObject();
+            err.put("event", "APP_ERROR");
+            err.put("message", e.getMessage() == null ? "AI服务异常" : e.getMessage());
+            emitter.send(SseEmitter.event().data(err.toJSONString()));
+            emitter.complete();
+        } catch (IOException ex) {
+            log.warn("[CsAiStream] 发送错误事件失败", ex);
+            try {
+                emitter.complete();
+            } catch (Exception ignored) {
+                // ignore
+            }
         }
     }
 
@@ -425,6 +473,17 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         session.setStatus(CsSessionStatus.CLOSED);
         session.setCloseTime(System.currentTimeMillis());
         updateById(session);
+    }
+
+    private List<FdCsMessage> listRecentMessages(Long sessionId) {
+        if (sessionId == null) {
+            return List.of();
+        }
+        return messageMapper.selectList(new LambdaQueryWrapper<FdCsMessage>()
+                .eq(FdCsMessage::getSessionId, sessionId)
+                .in(FdCsMessage::getSenderType, CsSenderType.USER, CsSenderType.AI)
+                .orderByAsc(FdCsMessage::getCreateTime)
+                .last("LIMIT 24"));
     }
 
     private FdCsSession resolveSession(Long userId, String sessionId, String source) {

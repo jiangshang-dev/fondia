@@ -115,6 +115,18 @@ public class FdUser implements Serializable {
     @Schema(description = "连续签到天数")
     private Integer checkInDays;
 
+    /**会员状态 (0:非会员, 1:有效会员, 2:已过期)*/
+    @Schema(description = "会员状态 (0:非会员, 1:有效会员, 2:已过期)")
+    private Integer memberStatus;
+
+    /**会员到期时间(毫秒时间戳，冗余快照)*/
+    @Schema(description = "会员到期时间(毫秒时间戳)")
+    private Long memberExpireTime;
+
+    /**当前生效套餐编码(冗余快照)*/
+    @Schema(description = "当前生效套餐编码")
+    private String memberPlanCode;
+
     /**账号状态 (1:正常, 0:禁用, -1:已注销)*/
     @Schema(description = "账号状态 (1:正常, 0:禁用, -1:已注销)")
     private Integer status;

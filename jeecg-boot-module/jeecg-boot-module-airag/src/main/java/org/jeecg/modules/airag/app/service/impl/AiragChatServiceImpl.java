@@ -108,8 +108,8 @@ public class AiragChatServiceImpl implements IAiragChatService {
     @Autowired
     private RedisUtil redisUtil;
 
-    @Autowired
-    JeecgToolsProvider jeecgToolsProvider;
+    @Autowired(required = false)
+    List<JeecgToolsProvider> jeecgToolsProviders;
 
     @Autowired
     AiragModelMapper airagModelMapper;
@@ -686,7 +686,7 @@ public class AiragChatServiceImpl implements IAiragChatService {
      * @date 2025/2/26 15:09
      */
     private String getConversationDirCacheKey(HttpServletRequest httpRequest) {
-        String username = getUsername(httpRequest);
+        String username = resolveCacheUser(httpRequest);
         // 如果用户不存在,获取当前请求的sessionid
         if (oConvertUtils.isEmpty(username)) {
             try {
@@ -1434,13 +1434,20 @@ public class AiragChatServiceImpl implements IAiragChatService {
             aiChatParams = new AIChatParams();
         }
         HttpServletRequest httpRequest = SpringContextUtils.getHttpServletRequest();
-        // 如果是默认app,加载系统默认工具
-        if(chatConversation.getApp().getId().equals(AiAppConsts.DEFAULT_APP_ID)){
-            // Security fix: 仅已登录用户可加载敏感业务工具(add_user,grant_user_roles等),匿名用户仍可正常使用AI聊天
-            String currentUser = getUsername(httpRequest);
-            if (oConvertUtils.isNotEmpty(currentUser)) {
-                aiChatParams.setTools(jeecgToolsProvider.getDefaultTools());
+        String currentUser = getUsername(httpRequest);
+        Map<ToolSpecification, ToolExecutor> mergedTools = new HashMap<>();
+        mergeFondiaChatTools(chatConversation, mergedTools);
+        if (oConvertUtils.isNotEmpty(currentUser)
+                && chatConversation.getApp().getId().equals(AiAppConsts.DEFAULT_APP_ID)) {
+            addProviderTools("JeecgBizToolsProvider", mergedTools);
+        }
+        if (!mergedTools.isEmpty()) {
+            Map<ToolSpecification, ToolExecutor> existing = aiChatParams.getTools();
+            if (existing == null) {
+                existing = new HashMap<>();
             }
+            existing.putAll(mergedTools);
+            aiChatParams.setTools(existing);
         }
         //update-begin---author:wangshuai ---date:2026-04-15  for：Brave Search配置迁移到AiRagConfigBean，仅在联网搜索开启时注入工具-----------
         // Brave Search 联网检索工具：前端 enableSearch=true 且 apiKey 已配置时才注入
@@ -1816,6 +1823,56 @@ public class AiragChatServiceImpl implements IAiragChatService {
      * @author chenrui
      * @date 2025/3/27 15:05
      */
+    private void addProviderTools(String providerSimpleName,
+                                  Map<ToolSpecification, ToolExecutor> target) {
+        if (jeecgToolsProviders == null) {
+            return;
+        }
+        for (JeecgToolsProvider provider : jeecgToolsProviders) {
+            if (providerSimpleName.equals(provider.getClass().getSimpleName())) {
+                Map<ToolSpecification, ToolExecutor> tools = provider.getDefaultTools();
+                if (tools != null && !tools.isEmpty()) {
+                    target.putAll(tools);
+                }
+                return;
+            }
+        }
+    }
+
+    /**
+     * Fondia 简单聊天/编排应用：注入菜谱搜索等业务工具（排除后台管理类工具）
+     */
+    private void mergeFondiaChatTools(ChatConversation chatConversation,
+                                      Map<ToolSpecification, ToolExecutor> target) {
+        if (chatConversation.getApp() == null || jeecgToolsProviders == null) {
+            return;
+        }
+        String type = chatConversation.getApp().getType();
+        if (!AiAppConsts.APP_TYPE_CHAT_SIMPLE.equals(type)
+                && !AiAppConsts.APP_TYPE_CHAT_FLOW.equals(type)) {
+            return;
+        }
+        for (JeecgToolsProvider provider : jeecgToolsProviders) {
+            if ("JeecgBizToolsProvider".equals(provider.getClass().getSimpleName())) {
+                continue;
+            }
+            Map<ToolSpecification, ToolExecutor> tools = provider.getDefaultTools();
+            if (tools != null && !tools.isEmpty()) {
+                target.putAll(tools);
+            }
+        }
+    }
+
+    private String resolveCacheUser(HttpServletRequest httpRequest) {
+        if (httpRequest != null) {
+            String fondiaUser = httpRequest.getHeader("X-Airag-Cache-User");
+            if (oConvertUtils.isNotEmpty(fondiaUser)) {
+                return fondiaUser;
+            }
+        }
+        return getUsername(httpRequest);
+    }
+
     private String getUsername(HttpServletRequest httpRequest) {
         try {
             TokenUtils.getTokenByRequest();

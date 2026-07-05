@@ -219,6 +219,17 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
         rabbitMqClient.sendMessage(RabbitConstant.SAVE_RECIPE, JSONUtil.toJsonStr(message));
     }
 
+    @Override
+    public int rebuildAllRecipeSearchIndex() {
+        List<FdRecipe> recipes = list(new LambdaQueryWrapper<FdRecipe>()
+                .eq(FdRecipe::getStatus, 1)
+                .eq(FdRecipe::getDelFlag, 0));
+        for (FdRecipe recipe : recipes) {
+            publishRecipeSearchSync(recipe.getId());
+        }
+        return recipes.size();
+    }
+
     private RecipeSearchSyncMessage buildSearchSyncMessage(Long recipeId, String action) {
         FdRecipe recipe = getById(recipeId);
         if (recipe == null) {

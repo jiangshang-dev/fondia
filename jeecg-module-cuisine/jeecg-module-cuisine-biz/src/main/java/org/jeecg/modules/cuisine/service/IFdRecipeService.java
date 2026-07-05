@@ -31,4 +31,7 @@ public interface IFdRecipeService extends IService<FdRecipe> {
 
     /** 从搜索索引删除菜谱 */
     void removeRecipeFromSearch(Long recipeId);
+
+    /** 全量重建搜索索引（MySQL 已有数据但 ES 为空时调用） */
+    int rebuildAllRecipeSearchIndex();
 }

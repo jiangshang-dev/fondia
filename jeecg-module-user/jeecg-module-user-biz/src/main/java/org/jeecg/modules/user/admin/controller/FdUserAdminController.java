@@ -63,7 +63,9 @@ public class FdUserAdminController extends JeecgController<FdUser, IFdUserServic
     @AutoLog(value = "更新App用户状态")
     @Operation(summary = "更新App用户状态")
     @PutMapping("/updateStatus")
-    public Result<String> updateStatus(@RequestParam Long id, @RequestParam Integer status) {
+    public Result<String> updateStatus(@RequestBody FdUser fdUser) {
+        Long id = fdUser.getId();
+        Integer status = fdUser.getStatus();
         FdUser user = service.getById(id);
         if (user == null) {
             return Result.error("用户不存在");
