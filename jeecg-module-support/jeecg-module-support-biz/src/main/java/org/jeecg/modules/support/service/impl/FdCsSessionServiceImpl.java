@@ -25,6 +25,7 @@ import org.jeecg.modules.support.service.ICsAiService;
 import org.jeecg.modules.support.service.IFdCsConfigService;
 import org.jeecg.modules.support.service.IFdCsMessageService;
 import org.jeecg.modules.support.service.IFdCsSessionService;
+import org.jeecg.modules.support.service.impl.FdCsMessageServiceImpl;
 import org.jeecg.modules.support.tool.SearchTool;
 import org.jeecg.modules.support.vo.AiChatVO;
 import org.jeecg.modules.support.vo.AiRecipeCardVO;
@@ -134,11 +135,11 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         session.setLastMessageTime(System.currentTimeMillis());
         updateById(session);
 
-        FdCsMessage aiMsg = messageService.saveMessage(
-                session.getId(), CsSenderType.AI, "AI", aiResult.reply(), null);
-
         List<AiRecipeCardVO> recipes = recipeMatchService.matchForChat(
                 session.getId(), dto.getContent(), aiResult.reply());
+
+        FdCsMessage aiMsg = messageService.saveMessage(
+                session.getId(), CsSenderType.AI, "AI", aiResult.reply(), null, recipes);
 
         AiChatVO vo = new AiChatVO();
         vo.setSessionId(String.valueOf(session.getId()));
@@ -210,7 +211,6 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
             sessionRef.setLastMessage(trimSummary(reply));
             sessionRef.setLastMessageTime(System.currentTimeMillis());
             updateById(sessionRef);
-            messageService.saveMessage(sessionId, CsSenderType.AI, "AI", reply, null);
 
             List<AiRecipeCardVO> toolRecipes = enrichRecipeUrls(streamResult.toolRecipes());
             if (!toolRecipes.isEmpty()) {
@@ -220,6 +220,8 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
             List<AiRecipeCardVO> recipes = mergeRecipeLists(
                     toolRecipes,
                     enrichRecipeUrls(recipeMatchService.matchForChat(sessionId, userMessage, reply)));
+            messageService.saveMessage(sessionId, CsSenderType.AI, "AI", reply, null, recipes);
+
             JSONObject meta = new JSONObject();
             meta.put("event", "APP_META");
             meta.put("sessionId", String.valueOf(sessionId));
@@ -679,6 +681,7 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
         BeanUtils.copyProperties(message, vo);
         vo.setId(String.valueOf(message.getId()));
         vo.setSessionId(String.valueOf(message.getSessionId()));
+        vo.setRecipes(FdCsMessageServiceImpl.parseRecipesFromExtra(message.getExtraJson()));
         return vo;
     }
 

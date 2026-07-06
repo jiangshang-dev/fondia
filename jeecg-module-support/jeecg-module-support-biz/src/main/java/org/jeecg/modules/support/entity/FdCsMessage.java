@@ -25,6 +25,8 @@ public class FdCsMessage implements Serializable {
     private String senderId;
     private String msgType;
     private String content;
+    /** AI 消息扩展数据 JSON，如 {"recipes":[...]} */
+    private String extraJson;
     private Long createTime;
     private String clientMsgId;
 }
