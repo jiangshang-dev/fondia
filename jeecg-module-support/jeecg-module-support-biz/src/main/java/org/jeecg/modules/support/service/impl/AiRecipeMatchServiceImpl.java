@@ -14,6 +14,7 @@ import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.support.api.CsSearchFeignClient;
 import org.jeecg.modules.support.api.vo.RecipeSearchFeignVO;
 import org.jeecg.modules.support.service.IAiRecipeMatchService;
+import org.jeecg.modules.support.tool.SearchTool;
 import org.jeecg.modules.support.vo.AiRecipeCardVO;
 import org.springframework.stereotype.Service;
 
@@ -290,6 +291,7 @@ public class AiRecipeMatchServiceImpl implements IAiRecipeMatchService {
                     .subtitle(best.getSubtitle())
                     .coverImage(best.getCoverImage())
                     .cookMinutes(best.getCookMinutes())
+                    .url(SearchTool.buildRecipeUrl(best.getId()))
                     .build();
         } catch (Exception e) {
             log.warn("[AiRecipeMatch] 搜索菜谱失败 keyword={}", keyword, e);

@@ -25,6 +25,7 @@ import org.jeecg.modules.support.service.ICsAiService;
 import org.jeecg.modules.support.service.IFdCsConfigService;
 import org.jeecg.modules.support.service.IFdCsMessageService;
 import org.jeecg.modules.support.service.IFdCsSessionService;
+import org.jeecg.modules.support.tool.SearchTool;
 import org.jeecg.modules.support.vo.AiChatVO;
 import org.jeecg.modules.support.vo.AiRecipeCardVO;
 import org.jeecg.modules.support.vo.AiSessionSummaryVO;
@@ -40,7 +41,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.alibaba.fastjson.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -209,7 +212,14 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
             updateById(sessionRef);
             messageService.saveMessage(sessionId, CsSenderType.AI, "AI", reply, null);
 
-            List<AiRecipeCardVO> recipes = recipeMatchService.matchForChat(sessionId, userMessage, reply);
+            List<AiRecipeCardVO> toolRecipes = enrichRecipeUrls(streamResult.toolRecipes());
+            if (!toolRecipes.isEmpty()) {
+                pushRecipeToolLink(emitter, sessionId, toolRecipes);
+            }
+
+            List<AiRecipeCardVO> recipes = mergeRecipeLists(
+                    toolRecipes,
+                    enrichRecipeUrls(recipeMatchService.matchForChat(sessionId, userMessage, reply)));
             JSONObject meta = new JSONObject();
             meta.put("event", "APP_META");
             meta.put("sessionId", String.valueOf(sessionId));
@@ -242,6 +252,57 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
             log.error("[CsAiStream] 转人工流式失败 sessionId={}", sessionId, e);
             sendStreamError(emitter, e);
         }
+    }
+
+    /**
+     * AI 文本流结束后、APP_META 结束前，推送菜谱 Tool 结果链接（对齐 ruiyada chunkLink）。
+     */
+    private void pushRecipeToolLink(SseEmitter emitter, Long sessionId, List<AiRecipeCardVO> toolRecipes)
+            throws IOException {
+        JSONObject link = new JSONObject();
+        link.put("event", "APP_LINK");
+        link.put("sessionId", String.valueOf(sessionId));
+        link.put("linkType", "recipe");
+        link.put("recipes", toolRecipes);
+        link.put("message", com.alibaba.fastjson.JSON.toJSONString(toolRecipes));
+        emitter.send(SseEmitter.event().data(link.toJSONString()));
+        log.info("[CsAiStream] 推送菜谱 Tool 链接 sessionId={} count={}", sessionId, toolRecipes.size());
+    }
+
+    private List<AiRecipeCardVO> enrichRecipeUrls(List<AiRecipeCardVO> source) {
+        if (source == null || source.isEmpty()) {
+            return List.of();
+        }
+        List<AiRecipeCardVO> enriched = new ArrayList<>();
+        for (AiRecipeCardVO card : source) {
+            if (card == null || oConvertUtils.isEmpty(card.getId())) {
+                continue;
+            }
+            if (oConvertUtils.isEmpty(card.getUrl())) {
+                card.setUrl(SearchTool.buildRecipeUrl(card.getId()));
+            }
+            enriched.add(card);
+        }
+        return enriched;
+    }
+
+    private List<AiRecipeCardVO> mergeRecipeLists(List<AiRecipeCardVO> primary, List<AiRecipeCardVO> secondary) {
+        Map<String, AiRecipeCardVO> merged = new LinkedHashMap<>();
+        if (primary != null) {
+            for (AiRecipeCardVO card : primary) {
+                if (card != null && oConvertUtils.isNotEmpty(card.getId())) {
+                    merged.put(card.getId(), card);
+                }
+            }
+        }
+        if (secondary != null) {
+            for (AiRecipeCardVO card : secondary) {
+                if (card != null && oConvertUtils.isNotEmpty(card.getId())) {
+                    merged.putIfAbsent(card.getId(), card);
+                }
+            }
+        }
+        return new ArrayList<>(merged.values());
     }
 
     private void sendStreamError(SseEmitter emitter, Exception e) {

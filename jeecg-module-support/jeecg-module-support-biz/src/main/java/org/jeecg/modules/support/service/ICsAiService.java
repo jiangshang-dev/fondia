@@ -1,5 +1,9 @@
 package org.jeecg.modules.support.service;
 
+import org.jeecg.modules.support.service.ICsAiService;
+import org.jeecg.modules.support.vo.AiRecipeCardVO;
+
+import java.util.List;
 import java.util.function.Consumer;
 
 public interface ICsAiService {
@@ -18,6 +22,9 @@ public interface ICsAiService {
     record AiChatResult(String reply, String conversationId) {
     }
 
-    record StreamChatResult(String reply, String conversationId) {
+    record StreamChatResult(String reply, String conversationId, List<AiRecipeCardVO> toolRecipes) {
+        public StreamChatResult(String reply, String conversationId) {
+            this(reply, conversationId, List.of());
+        }
     }
 }

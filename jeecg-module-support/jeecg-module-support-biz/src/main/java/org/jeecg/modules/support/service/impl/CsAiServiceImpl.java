@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.support.service.ICsAiService;
+import org.jeecg.modules.support.tool.CsAiStreamToolCollector;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -69,6 +70,7 @@ public class CsAiServiceImpl implements ICsAiService {
 
         HttpURLConnection conn = null;
         StringBuilder replyBuilder = new StringBuilder();
+        CsAiStreamToolCollector toolCollector = new CsAiStreamToolCollector();
         String newConversationId = conversationId;
         try {
             conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
@@ -104,6 +106,7 @@ public class CsAiServiceImpl implements ICsAiService {
                         continue;
                     }
                     onEvent.accept(payload);
+                    toolCollector.consume(payload);
                     String[] holder = {newConversationId};
                     appendMessageFromEvent(payload, replyBuilder, holder);
                     if (oConvertUtils.isNotEmpty(holder[0])) {
@@ -113,7 +116,7 @@ public class CsAiServiceImpl implements ICsAiService {
             }
 
             String reply = replyBuilder.toString().trim();
-            return new StreamChatResult(reply, newConversationId);
+            return new StreamChatResult(reply, newConversationId, toolCollector.getRecipes());
         } catch (JeecgBootException e) {
             throw e;
         } catch (Exception e) {

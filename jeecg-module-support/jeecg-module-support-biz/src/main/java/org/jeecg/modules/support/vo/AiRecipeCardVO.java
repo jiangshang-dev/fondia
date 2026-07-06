@@ -18,4 +18,6 @@ public class AiRecipeCardVO {
     private String subtitle;
     private String coverImage;
     private Integer cookMinutes;
+    @Schema(description = "App 内菜谱详情跳转链接，如 fondia://recipe/{id}")
+    private String url;
 }
