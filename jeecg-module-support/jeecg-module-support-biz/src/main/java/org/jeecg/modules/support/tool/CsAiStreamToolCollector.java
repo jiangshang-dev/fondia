@@ -106,10 +106,13 @@ public class CsAiStreamToolCollector {
     }
 
     private void addCard(JSONObject item) {
-        if (item == null || oConvertUtils.isEmpty(item.getString("id"))) {
+        if (item == null) {
             return;
         }
         String id = item.getString("id");
+        if (!isValidRecipeId(id)) {
+            return;
+        }
         AiRecipeCardVO card = AiRecipeCardVO.builder()
                 .id(id)
                 .title(item.getString("title"))
@@ -119,6 +122,10 @@ public class CsAiStreamToolCollector {
                 .url(SearchTool.buildRecipeUrl(id))
                 .build();
         recipes.putIfAbsent(id, card);
+    }
+
+    private static boolean isValidRecipeId(String id) {
+        return oConvertUtils.isNotEmpty(id) && id.matches("\\d{10,20}");
     }
 
     public List<AiRecipeCardVO> getRecipes() {

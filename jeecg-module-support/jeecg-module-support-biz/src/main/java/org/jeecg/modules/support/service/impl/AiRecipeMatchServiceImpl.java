@@ -39,6 +39,12 @@ public class AiRecipeMatchServiceImpl implements IAiRecipeMatchService {
     private static final Pattern DISH_QUERY = Pattern.compile("([\\u4e00-\\u9fa5a-zA-Z0-9]{2,12})(?:的)?(?:详细)?(?:做法|怎么做|如何做|怎样做|制作|步骤)");
     private static final Pattern DISH_IN_BOOK = Pattern.compile("《([\\u4e00-\\u9fa5a-zA-Z0-9]{2,12})》");
     private static final Pattern FOLLOW_UP = Pattern.compile("上面|刚才|之前|前面|上述|刚推荐|刚说|上面推荐|那道|那几");
+    /** 雪花 ID：纯数字且长度合理 */
+    private static final Pattern NUMERIC_RECIPE_ID = Pattern.compile("^\\d{10,20}$");
+
+    private static boolean isValidRecipeId(String id) {
+        return oConvertUtils.isNotEmpty(id) && NUMERIC_RECIPE_ID.matcher(id).matches();
+    }
 
     @Resource
     private CsSearchFeignClient searchFeignClient;
@@ -88,10 +94,9 @@ public class AiRecipeMatchServiceImpl implements IAiRecipeMatchService {
             }
             String id = tagMatcher.group(1).trim();
             String title = tagMatcher.group(2).trim();
-            if (oConvertUtils.isNotEmpty(id)) {
-                AiRecipeCardVO card = AiRecipeCardVO.builder().id(id).title(title).build();
-                enrichCard(card);
-                matched.put(id, card);
+            AiRecipeCardVO card = resolveRecipeCard(id, title);
+            if (card != null && isValidRecipeId(card.getId())) {
+                matched.put(card.getId(), card);
             }
         }
         tryParseJsonCards(aiReply, matched);
@@ -182,16 +187,49 @@ public class AiRecipeMatchServiceImpl implements IAiRecipeMatchService {
         if (card == null || oConvertUtils.isEmpty(card.getId())) {
             return;
         }
+        if (!isValidRecipeId(card.getId())) {
+            AiRecipeCardVO resolved = resolveRecipeCard(card.getId(), card.getTitle());
+            if (resolved != null) {
+                card.setId(resolved.getId());
+                card.setTitle(resolved.getTitle());
+                card.setSubtitle(resolved.getSubtitle());
+                card.setCoverImage(resolved.getCoverImage());
+                card.setCookMinutes(resolved.getCookMinutes());
+                card.setUrl(resolved.getUrl());
+            }
+            return;
+        }
         if (oConvertUtils.isNotEmpty(card.getCoverImage())) {
+            if (oConvertUtils.isEmpty(card.getUrl())) {
+                card.setUrl(SearchTool.buildRecipeUrl(card.getId()));
+            }
             return;
         }
         AiRecipeCardVO found = searchRecipe(oConvertUtils.isNotEmpty(card.getTitle()) ? card.getTitle() : card.getId());
         if (found != null) {
+            card.setId(found.getId());
             card.setTitle(found.getTitle());
             card.setSubtitle(found.getSubtitle());
             card.setCoverImage(found.getCoverImage());
             card.setCookMinutes(found.getCookMinutes());
+            card.setUrl(found.getUrl());
         }
+    }
+
+    /**
+     * 将标签中的 id/title 解析为真实菜谱卡片；AI 常把菜名写入 id 位，需走搜索纠正。
+     */
+    private AiRecipeCardVO resolveRecipeCard(String id, String title) {
+        if (isValidRecipeId(id)) {
+            AiRecipeCardVO card = AiRecipeCardVO.builder().id(id).title(title).url(SearchTool.buildRecipeUrl(id)).build();
+            enrichCard(card);
+            return card;
+        }
+        String keyword = oConvertUtils.isNotEmpty(title) ? title : id;
+        if (oConvertUtils.isEmpty(keyword)) {
+            return null;
+        }
+        return searchRecipe(keyword);
     }
 
     private void tryParseJsonCards(String aiReply, Map<String, AiRecipeCardVO> matched) {
@@ -218,13 +256,10 @@ public class AiRecipeMatchServiceImpl implements IAiRecipeMatchService {
                     continue;
                 }
                 String id = item.getString("id");
-                matched.putIfAbsent(id, AiRecipeCardVO.builder()
-                        .id(id)
-                        .title(item.getString("title"))
-                        .subtitle(item.getString("subtitle"))
-                        .coverImage(item.getString("coverImage"))
-                        .cookMinutes(item.getInteger("cookMinutes"))
-                        .build());
+                AiRecipeCardVO card = resolveRecipeCard(id, item.getString("title"));
+                if (card != null && isValidRecipeId(card.getId())) {
+                    matched.putIfAbsent(card.getId(), card);
+                }
             }
         } catch (Exception ignored) {
         }
