@@ -1,5 +1,5 @@
-CREATE database if NOT EXISTS `jeecg-boot` default character set utf8mb4 collate utf8mb4_unicode_ci;
-USE `jeecg-boot`;
+CREATE database if NOT EXISTS `wx-qds` default character set utf8mb4 collate utf8mb4_unicode_ci;
+USE `wx-qds`;
 
 /*
  Navicat Premium Data Transfer
