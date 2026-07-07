@@ -33,25 +33,24 @@ public class FdDashboardServiceImpl implements IFdDashboardService {
 
     @Override
     public FdDashboardOverviewVO getOverview() {
-        long now = System.currentTimeMillis();
         long todayStart = startOfTodayMillis();
         long tomorrowStart = todayStart + TimeUnit.DAYS.toMillis(1);
 
         FdDashboardOverviewVO vo = new FdDashboardOverviewVO();
         vo.setTotalUsers(safeLong(dashboardMapper.countTotalUsers()));
         vo.setTodayNewUsers(safeLong(dashboardMapper.countUsersBetween(todayStart, tomorrowStart)));
-        vo.setActiveMembers(safeLong(dashboardMapper.countActiveMembers(now)));
+        vo.setActiveMembers(safeLong(dashboardMapper.countActiveFastingSessions()));
         vo.setTotalMemberSales(safeDecimal(dashboardMapper.sumMemberSales()));
         vo.setTodayMemberSales(safeDecimal(dashboardMapper.sumMemberSalesBetween(todayStart, tomorrowStart)));
-        vo.setTotalPaidMemberOrders(safeLong(dashboardMapper.countPaidMemberOrders()));
-        vo.setTodayPaidMemberOrders(safeLong(dashboardMapper.countPaidMemberOrdersBetween(todayStart, tomorrowStart)));
-        vo.setTotalMallOrders(safeLong(dashboardMapper.countMallOrders()));
+        vo.setTotalPaidMemberOrders(safeLong(dashboardMapper.countCompletedSessions()));
+        vo.setTodayPaidMemberOrders(safeLong(dashboardMapper.countCompletedSessionsBetween(todayStart, tomorrowStart)));
+        vo.setTotalMallOrders(safeLong(dashboardMapper.countMealItems()));
         vo.setPendingMallOrders(safeLong(dashboardMapper.countPendingMallOrders()));
-        vo.setOnlineRecipes(safeLong(dashboardMapper.countOnlineRecipes()));
+        vo.setOnlineRecipes(safeLong(dashboardMapper.countFastingPlans()));
         vo.setPendingComments(safeLong(dashboardMapper.countPendingComments()));
         vo.setPendingFeedback(safeLong(dashboardMapper.countPendingFeedback()));
         vo.setPendingCsSessions(safeLong(dashboardMapper.countPendingCsSessions()));
-        vo.setTotalPointsIssued(safeLong(dashboardMapper.sumPointsIssued()));
+        vo.setTotalPointsIssued(safeLong(dashboardMapper.countAiMessages()));
         return vo;
     }
 
@@ -98,14 +97,10 @@ public class FdDashboardServiceImpl implements IFdDashboardService {
     private List<FdTodoItemVO> buildTodos(FdDashboardOverviewVO overview) {
         List<FdTodoItemVO> list = new ArrayList<>();
 
-        addTodo(list, "待审核评论", "有新的菜谱评论等待审核", overview.getPendingComments(),
-                "/fondia/interaction/comment", "ant-design:message-outlined", "#1890ff");
         addTodo(list, "待处理反馈", "用户意见反馈待处理", overview.getPendingFeedback(),
-                "/fondia/user/feedback", "ant-design:comment-outlined", "#722ed1");
-        addTodo(list, "待发货兑换", "积分商城兑换订单待发货", overview.getPendingMallOrders(),
-                "/fondia/mall/order", "ant-design:shopping-outlined", "#fa8c16");
-        addTodo(list, "待接入客服", "客服会话等待人工接入", overview.getPendingCsSessions(),
-                "/fondia/support/workbench", "ant-design:customer-service-outlined", "#13c2c2");
+                "/fasting/user/feedback", "ant-design:comment-outlined", "#722ed1");
+        addTodo(list, "进行中会话", "当前进行中的断食/进食会话", overview.getActiveMembers(),
+                "/fasting/session", "ant-design:clock-circle-outlined", "#fa8c16");
 
         list.sort(Comparator.comparing(FdTodoItemVO::getCount, Comparator.nullsLast(Comparator.reverseOrder())));
         return list;
@@ -129,9 +124,8 @@ public class FdDashboardServiceImpl implements IFdDashboardService {
     private List<FdActivityItemVO> mergeActivities(int limit) {
         List<FdActivityItemVO> all = new ArrayList<>();
         all.addAll(dashboardMapper.selectRecentUsers(5));
-        all.addAll(dashboardMapper.selectRecentMemberOrders(5));
-        all.addAll(dashboardMapper.selectRecentMallOrders(5));
-        all.addAll(dashboardMapper.selectRecentComments(5));
+        all.addAll(dashboardMapper.selectRecentSessions(5));
+        all.addAll(dashboardMapper.selectRecentAiMessages(5));
         all.addAll(dashboardMapper.selectRecentFeedback(5));
         all.sort(Comparator.comparing(FdActivityItemVO::getTime,
                 Comparator.nullsLast(Comparator.reverseOrder())));

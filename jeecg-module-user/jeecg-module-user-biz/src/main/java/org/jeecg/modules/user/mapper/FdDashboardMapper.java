@@ -10,6 +10,9 @@ import org.jeecg.modules.user.admin.vo.dashboard.FdTrendPointVO;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Fast16 运营看板（仅查询轻断食/用户相关表，不再依赖 Fondia 商城/会员/菜谱表）
+ */
 @Mapper
 public interface FdDashboardMapper {
 
@@ -19,41 +22,40 @@ public interface FdDashboardMapper {
     @Select("SELECT COUNT(*) FROM fd_user WHERE status <> -1 AND create_time >= #{startTime} AND create_time < #{endTime}")
     Long countUsersBetween(@Param("startTime") Long startTime, @Param("endTime") Long endTime);
 
-    @Select("SELECT COUNT(*) FROM fd_member_subscription WHERE status = 1 AND expire_time > #{now}")
-    Long countActiveMembers(@Param("now") Long now);
+    /** 进行中断食/进食会话 */
+    @Select("SELECT COUNT(*) FROM fd_fast_session WHERE end_time IS NULL")
+    Long countActiveFastingSessions();
 
-    @Select("SELECT IFNULL(SUM(amount), 0) FROM fd_member_order WHERE pay_status = 1")
-    BigDecimal sumMemberSales();
+    /** 累计完成会话（已结束） */
+    @Select("SELECT COUNT(*) FROM fd_fast_session WHERE end_time IS NOT NULL")
+    Long countCompletedSessions();
 
-    @Select("SELECT IFNULL(SUM(amount), 0) FROM fd_member_order WHERE pay_status = 1 AND paid_time >= #{startTime} AND paid_time < #{endTime}")
-    BigDecimal sumMemberSalesBetween(@Param("startTime") Long startTime, @Param("endTime") Long endTime);
+    @Select("SELECT COUNT(*) FROM fd_fast_session WHERE end_time IS NOT NULL AND end_time >= FROM_UNIXTIME(#{startTime} / 1000) AND end_time < FROM_UNIXTIME(#{endTime} / 1000)")
+    Long countCompletedSessionsBetween(@Param("startTime") Long startTime, @Param("endTime") Long endTime);
 
-    @Select("SELECT COUNT(*) FROM fd_member_order WHERE pay_status = 1")
-    Long countPaidMemberOrders();
+    /** 餐单方案数 */
+    @Select("SELECT COUNT(*) FROM fd_fast_meal_plan WHERE status = 1")
+    Long countMealPlans();
 
-    @Select("SELECT COUNT(*) FROM fd_member_order WHERE pay_status = 1 AND paid_time >= #{startTime} AND paid_time < #{endTime}")
-    Long countPaidMemberOrdersBetween(@Param("startTime") Long startTime, @Param("endTime") Long endTime);
+    /** 餐次条目数 */
+    @Select("SELECT COUNT(*) FROM fd_fast_meal_item WHERE status = 1")
+    Long countMealItems();
 
-    @Select("SELECT COUNT(*) FROM fd_mall_order")
-    Long countMallOrders();
+    /** 断食计划模板数 */
+    @Select("SELECT COUNT(*) FROM fd_fast_plan WHERE status = 1")
+    Long countFastingPlans();
 
-    @Select("SELECT COUNT(*) FROM fd_mall_order WHERE order_status = 0")
-    Long countPendingMallOrders();
-
-    @Select("SELECT COUNT(*) FROM fd_recipe WHERE status = 1 AND del_flag = 0")
-    Long countOnlineRecipes();
-
-    @Select("SELECT COUNT(*) FROM fd_recipe_comment WHERE status = 2 AND del_flag = 0")
+    @Select("SELECT 0")
     Long countPendingComments();
 
     @Select("SELECT COUNT(*) FROM fd_user_feedback WHERE status = 0")
     Long countPendingFeedback();
 
-    @Select("SELECT COUNT(*) FROM fd_cs_session WHERE status IN ('WAITING', 'CHATTING')")
+    @Select("SELECT 0")
     Long countPendingCsSessions();
 
-    @Select("SELECT IFNULL(SUM(CASE WHEN change_amount > 0 THEN change_amount ELSE 0 END), 0) FROM fd_points_ledger")
-    Long sumPointsIssued();
+    @Select("SELECT COUNT(*) FROM fd_fast_ai_message")
+    Long countAiMessages();
 
     @Select("""
             SELECT DATE(FROM_UNIXTIME(create_time / 1000)) AS date,
@@ -67,35 +69,37 @@ public interface FdDashboardMapper {
     List<FdTrendPointVO> selectUserTrend(@Param("startTime") Long startTime);
 
     @Select("""
-            SELECT DATE(FROM_UNIXTIME(paid_time / 1000)) AS date,
+            SELECT DATE(end_time) AS date,
                    COUNT(*) AS count,
-                   IFNULL(SUM(amount), 0) AS amount
-            FROM fd_member_order
-            WHERE pay_status = 1 AND paid_time >= #{startTime}
-            GROUP BY DATE(FROM_UNIXTIME(paid_time / 1000))
+                   NULL AS amount
+            FROM fd_fast_session
+            WHERE end_time IS NOT NULL AND end_time >= FROM_UNIXTIME(#{startTime} / 1000)
+            GROUP BY DATE(end_time)
             ORDER BY date
             """)
-    List<FdTrendPointVO> selectMemberOrderTrend(@Param("startTime") Long startTime);
+    List<FdTrendPointVO> selectSessionTrend(@Param("startTime") Long startTime);
 
     @Select("""
-            SELECT DATE(FROM_UNIXTIME(create_time / 1000)) AS date,
+            SELECT DATE(create_time) AS date,
                    COUNT(*) AS count,
-                   IFNULL(SUM(points_cost * quantity), 0) AS amount
-            FROM fd_mall_order
-            WHERE create_time >= #{startTime}
-            GROUP BY DATE(FROM_UNIXTIME(create_time / 1000))
+                   NULL AS amount
+            FROM fd_fast_ai_message
+            WHERE create_time >= FROM_UNIXTIME(#{startTime} / 1000)
+            GROUP BY DATE(create_time)
             ORDER BY date
             """)
-    List<FdTrendPointVO> selectMallOrderTrend(@Param("startTime") Long startTime);
+    List<FdTrendPointVO> selectAiMessageTrend(@Param("startTime") Long startTime);
 
     @Select("""
-            SELECT product_name AS name, COUNT(*) AS value
-            FROM fd_mall_order
-            GROUP BY product_id, product_name
+            SELECT p.name AS name, COUNT(i.id) AS value
+            FROM fd_fast_meal_plan p
+            LEFT JOIN fd_fast_meal_item i ON i.plan_id = p.id AND i.status = 1
+            WHERE p.status = 1
+            GROUP BY p.id, p.name
             ORDER BY value DESC
             LIMIT #{limit}
             """)
-    List<FdRankItemVO> selectTopMallProducts(@Param("limit") int limit);
+    List<FdRankItemVO> selectTopMealPlans(@Param("limit") int limit);
 
     @Select("""
             SELECT IFNULL(u.nickname, u.username) AS name,
@@ -110,48 +114,87 @@ public interface FdDashboardMapper {
     List<FdActivityItemVO> selectRecentUsers(@Param("limit") int limit);
 
     @Select("""
-            SELECT CONCAT('订单 ', o.order_no) AS name,
-                   CONCAT('会员订单支付 ¥', o.amount, ' · ', o.plan_name) AS `desc`,
-                   o.paid_time AS time,
+            SELECT CONCAT('会话 ', s.id) AS name,
+                   CONCAT(s.phase, ' · 计划 ', IFNULL(s.plan_code, '-')) AS `desc`,
+                   UNIX_TIMESTAMP(s.start_time) * 1000 AS time,
                    'dynamic-avatar-2|svg' AS avatar
-            FROM fd_member_order o
-            WHERE o.pay_status = 1 AND o.paid_time IS NOT NULL
-            ORDER BY o.paid_time DESC
+            FROM fd_fast_session s
+            ORDER BY s.start_time DESC
             LIMIT #{limit}
             """)
-    List<FdActivityItemVO> selectRecentMemberOrders(@Param("limit") int limit);
+    List<FdActivityItemVO> selectRecentSessions(@Param("limit") int limit);
 
     @Select("""
-            SELECT CONCAT('兑换 ', o.order_no) AS name,
-                   CONCAT('积分兑换 ', o.product_name, ' · ', o.points_cost * o.quantity, ' 积分') AS `desc`,
-                   o.create_time AS time,
+            SELECT CONCAT('AI #', m.id) AS name,
+                   CONCAT(m.role, '：', LEFT(m.content, 40)) AS `desc`,
+                   UNIX_TIMESTAMP(m.create_time) * 1000 AS time,
                    'dynamic-avatar-3|svg' AS avatar
-            FROM fd_mall_order o
-            ORDER BY o.create_time DESC
+            FROM fd_fast_ai_message m
+            ORDER BY m.create_time DESC
             LIMIT #{limit}
             """)
-    List<FdActivityItemVO> selectRecentMallOrders(@Param("limit") int limit);
-
-    @Select("""
-            SELECT CONCAT('评论 #', c.id) AS name,
-                   CONCAT('用户评论菜谱：', LEFT(c.content, 40)) AS `desc`,
-                   UNIX_TIMESTAMP(c.create_time) * 1000 AS time,
-                   'dynamic-avatar-4|svg' AS avatar
-            FROM fd_recipe_comment c
-            WHERE c.del_flag = 0
-            ORDER BY c.create_time DESC
-            LIMIT #{limit}
-            """)
-    List<FdActivityItemVO> selectRecentComments(@Param("limit") int limit);
+    List<FdActivityItemVO> selectRecentAiMessages(@Param("limit") int limit);
 
     @Select("""
             SELECT CONCAT('反馈 #', f.id) AS name,
                    CONCAT('用户反馈：', LEFT(f.content, 40)) AS `desc`,
                    f.create_time AS time,
-                   'dynamic-avatar-5|svg' AS avatar
+                   'dynamic-avatar-4|svg' AS avatar
             FROM fd_user_feedback f
             ORDER BY f.create_time DESC
             LIMIT #{limit}
             """)
     List<FdActivityItemVO> selectRecentFeedback(@Param("limit") int limit);
+
+    /** 兼容旧 Service 字段映射：会员相关置 0 */
+    @Select("SELECT 0")
+    Long countActiveMembers(@Param("now") Long now);
+
+    @Select("SELECT 0")
+    BigDecimal sumMemberSales();
+
+    @Select("SELECT 0")
+    BigDecimal sumMemberSalesBetween(@Param("startTime") Long startTime, @Param("endTime") Long endTime);
+
+    @Select("SELECT 0")
+    Long countPaidMemberOrders();
+
+    @Select("SELECT 0")
+    Long countPaidMemberOrdersBetween(@Param("startTime") Long startTime, @Param("endTime") Long endTime);
+
+    @Select("SELECT COUNT(*) FROM fd_fast_meal_item WHERE status = 1")
+    Long countMallOrders();
+
+    @Select("SELECT 0")
+    Long countPendingMallOrders();
+
+    @Select("SELECT COUNT(*) FROM fd_fast_meal_item WHERE status = 1")
+    Long countOnlineRecipes();
+
+    @Select("SELECT COUNT(*) FROM fd_fast_ai_message")
+    Long sumPointsIssued();
+
+    default List<FdTrendPointVO> selectMemberOrderTrend(Long startTime) {
+        return selectSessionTrend(startTime);
+    }
+
+    default List<FdTrendPointVO> selectMallOrderTrend(Long startTime) {
+        return selectAiMessageTrend(startTime);
+    }
+
+    default List<FdRankItemVO> selectTopMallProducts(int limit) {
+        return selectTopMealPlans(limit);
+    }
+
+    default List<FdActivityItemVO> selectRecentMemberOrders(int limit) {
+        return selectRecentSessions(limit);
+    }
+
+    default List<FdActivityItemVO> selectRecentMallOrders(int limit) {
+        return selectRecentAiMessages(limit);
+    }
+
+    default List<FdActivityItemVO> selectRecentComments(int limit) {
+        return List.of();
+    }
 }
