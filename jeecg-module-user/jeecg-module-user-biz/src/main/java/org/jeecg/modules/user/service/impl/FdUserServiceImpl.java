@@ -110,6 +110,8 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
             existingAuth.setAvatar(loginDTO.getAvatar());
             existingAuth.setUpdateTime(System.currentTimeMillis());
             userAuthService.updateById(existingAuth);
+            syncThirdPartyProfile(user, loginDTO);
+            this.updateById(user);
         } else {
             // 4.2 不存在授权记录，创建新用户和授权记录
             isNewUser = true;
@@ -236,17 +238,29 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         boolean hasSecret = oConvertUtils.isNotEmpty(huaweiOAuthProperties.getClientSecret())
                 && oConvertUtils.isNotEmpty(huaweiOAuthProperties.getClientId());
 
-        if (hasSecret) {
-            HuaweiOAuthClient.HuaweiTokenResult tokenResult =
-                    huaweiOAuthClient.exchangeAuthorizationCode(loginDTO.getAuthorizationCode());
-            if (oConvertUtils.isNotEmpty(tokenResult.getIdToken())) {
-                idToken = tokenResult.getIdToken();
+        if (hasSecret && oConvertUtils.isNotEmpty(loginDTO.getAuthorizationCode())) {
+            try {
+                HuaweiOAuthClient.HuaweiTokenResult tokenResult =
+                        huaweiOAuthClient.exchangeAuthorizationCode(loginDTO.getAuthorizationCode());
+                if (oConvertUtils.isNotEmpty(tokenResult.getIdToken())) {
+                    idToken = tokenResult.getIdToken();
+                }
+                accessToken = tokenResult.getAccessToken();
+            } catch (JeecgBootException e) {
+                // OAuth 换 token 失败时，若客户端已带回 idToken 则回退解析（常见于 client_id 配置不一致）
+                if (oConvertUtils.isNotEmpty(loginDTO.getIdToken())) {
+                    log.warn("华为 OAuth 换 token 失败，回退使用客户端 idToken: {}", e.getMessage());
+                    idToken = loginDTO.getIdToken();
+                } else {
+                    throw e;
+                }
             }
-            accessToken = tokenResult.getAccessToken();
         } else if (huaweiOAuthProperties.isDevMode() && oConvertUtils.isNotEmpty(idToken)) {
             log.warn("华为 OAuth 未配置密钥，开发模式直接使用客户端 idToken，生产环境请配置 thirdparty.huawei.clientSecret");
-        } else {
-            throw new JeecgBootException("华为登录服务未配置，请联系管理员");
+        } else if (oConvertUtils.isNotEmpty(loginDTO.getAuthorizationCode())) {
+            throw new JeecgBootException("华为登录服务未配置，请在 application.yml 配置 thirdparty.huawei.clientId/clientSecret");
+        } else if (oConvertUtils.isEmpty(idToken)) {
+            throw new JeecgBootException("无法获取华为登录凭证，请重试");
         }
 
         String unionId = HuaweiIdTokenUtil.getUnionId(idToken);
@@ -260,8 +274,16 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         thirdPartyLoginDTO.setIdentityType(IdentityTypeEnum.HUAWEI.getCode());
         thirdPartyLoginDTO.setIdentifier(identifier);
         thirdPartyLoginDTO.setCredential(accessToken != null ? accessToken : loginDTO.getAuthorizationCode());
-        thirdPartyLoginDTO.setNickname(loginDTO.getNickname());
-        thirdPartyLoginDTO.setAvatar(loginDTO.getAvatar());
+        String nickname = loginDTO.getNickname();
+        String avatar = loginDTO.getAvatar();
+        if (oConvertUtils.isEmpty(nickname)) {
+            nickname = HuaweiIdTokenUtil.getDisplayName(idToken);
+        }
+        if (oConvertUtils.isEmpty(avatar)) {
+            avatar = HuaweiIdTokenUtil.getPicture(idToken);
+        }
+        thirdPartyLoginDTO.setNickname(nickname);
+        thirdPartyLoginDTO.setAvatar(avatar);
         thirdPartyLoginDTO.setPhone(loginDTO.getPhone());
 
         return thirdPartyLogin(thirdPartyLoginDTO);
@@ -671,6 +693,16 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
             return user.getPassword();
         }
         throw new JeecgBootException("用户凭证异常，无法生成 Token");
+    }
+
+    private void syncThirdPartyProfile(FdUser user, ThirdPartyLoginDTO loginDTO) {
+        if (oConvertUtils.isNotEmpty(loginDTO.getNickname())) {
+            user.setNickname(loginDTO.getNickname());
+        }
+        if (oConvertUtils.isNotEmpty(loginDTO.getAvatar())) {
+            user.setAvatar(loginDTO.getAvatar());
+        }
+        user.setUpdateTime(System.currentTimeMillis());
     }
 
     /**

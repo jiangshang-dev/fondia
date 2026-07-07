@@ -56,4 +56,25 @@ public final class HuaweiIdTokenUtil {
         }
         return unionId != null && !unionId.isNull() ? unionId.asText() : null;
     }
+
+    public static String getDisplayName(String idToken) {
+        return firstText(parsePayload(idToken), "display_name", "name", "nickname");
+    }
+
+    public static String getPicture(String idToken) {
+        return firstText(parsePayload(idToken), "picture", "avatar", "head_picture");
+    }
+
+    private static String firstText(JsonNode payload, String... keys) {
+        if (payload == null) {
+            return null;
+        }
+        for (String key : keys) {
+            JsonNode node = payload.get(key);
+            if (node != null && !node.isNull() && oConvertUtils.isNotEmpty(node.asText())) {
+                return node.asText();
+            }
+        }
+        return null;
+    }
 }

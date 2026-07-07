@@ -407,10 +407,11 @@ justauth:
     type: default
     prefix: 'demo::'
     timeout: 1h
-# 华为账号 OAuth（HarmonyOS 一键登录）
+# 华为账号 OAuth（须与 HarmonyOS App module.json5 metadata.client_id 一致）
+# Nacos 若配置了 thirdparty.huawei.* 会覆盖此处
 thirdparty:
   huawei:
-    client-id: ''
+    client-id: '6917609941030203315'
     client-secret: ''
     redirect-uri: ''
     dev-mode: true
