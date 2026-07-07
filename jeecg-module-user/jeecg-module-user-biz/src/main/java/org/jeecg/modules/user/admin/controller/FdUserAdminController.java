@@ -55,7 +55,6 @@ public class FdUserAdminController extends JeecgController<FdUser, IFdUserServic
     @RequestMapping(value = "/edit", method = {RequestMethod.PUT, RequestMethod.POST})
     public Result<String> edit(@RequestBody FdUser fdUser) {
         fdUser.setPassword(null);
-        fdUser.setUpdateTime(System.currentTimeMillis());
         service.updateById(fdUser);
         return Result.OK("编辑成功");
     }
@@ -65,13 +64,10 @@ public class FdUserAdminController extends JeecgController<FdUser, IFdUserServic
     @PutMapping("/updateStatus")
     public Result<String> updateStatus(@RequestBody FdUser fdUser) {
         Long id = fdUser.getId();
-        Integer status = fdUser.getStatus();
         FdUser user = service.getById(id);
         if (user == null) {
             return Result.error("用户不存在");
         }
-        user.setStatus(status);
-        user.setUpdateTime(System.currentTimeMillis());
         service.updateById(user);
         return Result.OK("状态更新成功");
     }

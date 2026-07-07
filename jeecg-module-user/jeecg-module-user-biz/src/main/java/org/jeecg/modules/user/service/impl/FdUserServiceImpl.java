@@ -167,21 +167,12 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
             user.setEmail(email);
             user.setNickname(System.currentTimeMillis()+"");
             user.setUsername(username);
-            user.setStatus(1);
-            user.setCreateTime(System.currentTimeMillis());
-            user.setUpdateTime(System.currentTimeMillis());
             setPlainPassword(user, DEFAULT_EMAIL_PASSWORD);
             this.save(user);
         } else if (!hasPassword(user)) {
             // 兼容历史邮箱用户：补全默认密码以便生成 Token
             setPlainPassword(user, DEFAULT_EMAIL_PASSWORD);
-            user.setUpdateTime(System.currentTimeMillis());
             updateById(user);
-        }
-
-        // 4. 检查账号状态
-        if (user.getStatus() == null || user.getStatus() != 1) {
-            throw new JeecgBootException("账号已被禁用或已注销");
         }
 
         // 5. 生成登录Token
@@ -206,11 +197,6 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         FdUser user = getUserByAccount(account);
         if (user == null) {
             throw new JeecgBootException("账号或密码错误");
-        }
-
-        // 2. 检查账号状态
-        if (user.getStatus() == null || user.getStatus() != 1) {
-            throw new JeecgBootException("账号已被禁用或已注销");
         }
 
         // 3. 验证密码
@@ -343,10 +329,6 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
             throw new JeecgBootException("用户不存在");
         }
 
-        if (user.getStatus() == null || user.getStatus() != 1) {
-            throw new JeecgBootException("账号已被禁用或已注销");
-        }
-
         if (!JwtUtil.verify(token, username, user.getPassword())) {
             throw new JeecgBootException("Token无效或已过期");
         }
@@ -385,31 +367,6 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         if (dto.getProvince() != null) {
             user.setProvince(dto.getProvince());
         }
-        if (dto.getCity() != null) {
-            user.setCity(dto.getCity());
-        }
-        if (dto.getDistrict() != null) {
-            user.setDistrict(dto.getDistrict());
-        }
-        if (dto.getSign() != null) {
-            user.setSign(dto.getSign());
-        }
-        if (dto.getCookingLevel() != null) {
-            user.setCookingLevel(dto.getCookingLevel());
-        }
-        if (dto.getTastePreference() != null) {
-            user.setTastePreference(dto.getTastePreference());
-        }
-        if (dto.getDietaryPreference() != null) {
-            user.setDietaryPreference(dto.getDietaryPreference());
-        }
-        if (dto.getNotifyEnabled() != null) {
-            user.setNotifyEnabled(dto.getNotifyEnabled());
-        }
-        if (dto.getActivityEnabled() != null) {
-            user.setActivityEnabled(dto.getActivityEnabled());
-        }
-        user.setUpdateTime(System.currentTimeMillis());
         updateById(user);
         return convertToUserInfoVO(user);
     }
@@ -464,22 +421,16 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         }
 
         long now = System.currentTimeMillis();
-        user.setStatus(-1);
         user.setNickname("已注销用户");
         user.setAvatar(null);
-        user.setSign(null);
         user.setPhone(null);
         user.setEmail(null);
         user.setUsername("deleted_" + user.getId() + "_" + now);
         setPlainPassword(user, oConvertUtils.randomGen(16));
-        user.setPoints(0);
-        user.setGrowthValue(0);
-        user.setCheckInDays(0);
-        user.setUpdateTime(now);
         updateById(user);
-
-        userAuthService.remove(new LambdaQueryWrapper<FdUserAuth>()
-                .eq(FdUserAuth::getUserId, user.getId()));
+        userAuthService.remove(
+                new LambdaQueryWrapper<FdUserAuth>().eq(FdUserAuth::getUserId, user.getId())
+        );
     }
 
     @Override
@@ -498,7 +449,6 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
             }
         }
         setPlainPassword(user, dto.getNewPassword());
-        user.setUpdateTime(System.currentTimeMillis());
         updateById(user);
     }
 
@@ -517,7 +467,6 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
             throw new JeecgBootException("验证码错误或已过期");
         }
         setPlainPassword(user, dto.getNewPassword());
-        user.setUpdateTime(System.currentTimeMillis());
         updateById(user);
     }
 
@@ -526,9 +475,6 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
             throw new JeecgBootException("账号不能为空");
         }
         FdUser user = getUserByAccount(account.trim());
-        if (user == null || user.getStatus() == null || user.getStatus() != 1) {
-            throw new JeecgBootException("账号不存在或不可用");
-        }
         return user;
     }
 
@@ -600,9 +546,6 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         FdUser user = resolveUserFromJwtUsername(username);
         if (user == null) {
             throw new JeecgBootException("用户不存在");
-        }
-        if (user.getStatus() == null || user.getStatus() != 1) {
-            throw new JeecgBootException("账号已被禁用或已注销");
         }
         if (!JwtUtil.verify(token, username, user.getPassword())) {
             throw new JeecgBootException("Token无效或已过期");
@@ -719,7 +662,6 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         if (oConvertUtils.isNotEmpty(loginDTO.getAvatar())) {
             user.setAvatar(loginDTO.getAvatar());
         }
-        user.setUpdateTime(System.currentTimeMillis());
     }
 
     /**

@@ -124,51 +124,6 @@ public class MybatisInterceptor implements Interceptor {
 				}
 			}
 		}
-		if (SqlCommandType.UPDATE == sqlCommandType) {
-			LoginUser sysUser = this.getLoginUser();
-			Field[] fields = null;
-			if (parameter instanceof ParamMap) {
-				ParamMap<?> p = (ParamMap<?>) parameter;
-				// 代码逻辑说明: 批量更新报错issues/IZA3Q--
-                String et = "et";
-				if (p.containsKey(et)) {
-					parameter = p.get(et);
-				} else {
-					parameter = p.get("param1");
-				}
-
-				// 代码逻辑说明: 更新指定字段时报错 issues/#516-
-				if (parameter == null) {
-					return invocation.proceed();
-				}
-
-				fields = oConvertUtils.getAllFields(parameter);
-			} else {
-				fields = oConvertUtils.getAllFields(parameter);
-			}
-
-			for (Field field : fields) {
-				log.debug("------field.name------" + field.getName());
-				try {
-					if ("updateBy".equals(field.getName())) {
-						//获取登录用户信息
-						if (sysUser != null) {
-							// 登录账号
-							field.setAccessible(true);
-							field.set(parameter, sysUser.getUsername());
-							field.setAccessible(false);
-						}
-					}
-					if ("updateTime".equals(field.getName())) {
-						field.setAccessible(true);
-						field.set(parameter, new Date());
-						field.setAccessible(false);
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}
 		return invocation.proceed();
 	}
 

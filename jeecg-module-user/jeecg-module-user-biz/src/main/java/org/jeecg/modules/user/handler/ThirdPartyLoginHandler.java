@@ -73,9 +73,6 @@ public interface ThirdPartyLoginHandler {
         user.setAvatar(userInfo.getAvatar());
         user.setPhone(loginDTO.getPhone());
         user.setEmail(loginDTO.getEmail());
-        user.setStatus(1);
-        user.setCreateTime(System.currentTimeMillis());
-        user.setUpdateTime(System.currentTimeMillis());
         return user;
     }
 
