@@ -9,6 +9,7 @@ import org.jeecg.modules.user.dto.ResetPasswordDTO;
 import org.jeecg.modules.user.dto.SendResetPasswordCodeDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
+import org.jeecg.modules.user.dto.WxMiniLoginDTO;
 import org.jeecg.modules.user.entity.FdUser;
 import org.jeecg.modules.user.vo.AccountDeletePreviewVO;
 import org.jeecg.modules.user.vo.LoginResultVO;
@@ -47,6 +48,11 @@ public interface IFdUserService extends IService<FdUser> {
      * 华为账号一键登录
      */
     LoginResultVO huaweiLogin(HuaweiLoginDTO loginDTO);
+
+    /**
+     * 微信小程序登录
+     */
+    LoginResultVO wxMiniLogin(WxMiniLoginDTO loginDTO);
 
     /**
      * 根据ID获取用户信息

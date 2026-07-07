@@ -12,6 +12,7 @@ import org.jeecg.modules.user.dto.ResetPasswordDTO;
 import org.jeecg.modules.user.dto.SendEmailCodeDTO;
 import org.jeecg.modules.user.dto.SendResetPasswordCodeDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
+import org.jeecg.modules.user.dto.WxMiniLoginDTO;
 import org.jeecg.modules.user.service.IFdUserService;
 import org.jeecg.modules.user.service.IVerificationCodeService;
 import org.jeecg.modules.user.vo.LoginResultVO;
@@ -130,6 +131,17 @@ public class LoginController {
             return Result.ok(result);
         } catch (Exception e) {
             log.error("华为账号登录失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "微信小程序登录")
+    @PostMapping("/wxMiniLogin")
+    public Result<LoginResultVO> wxMiniLogin(@Validated @RequestBody WxMiniLoginDTO loginDTO) {
+        try {
+            return Result.ok(userService.wxMiniLogin(loginDTO));
+        } catch (Exception e) {
+            log.error("微信小程序登录失败", e);
             return Result.error(e.getMessage());
         }
     }

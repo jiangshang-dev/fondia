@@ -80,12 +80,7 @@
     <module>jeecg-module-system</module>
     <module>jeecg-boot-module</module>
     <module>jeecg-module-user</module>
-    <module>jeecg-module-cuisine</module>
-    <module>jeecg-module-interaction</module>
-    <module>jeecg-module-support</module>
-    <module>jeecg-module-search</module>
-    <module>jeecg-module-member</module>
-    <module>jeecg-module-payment</module>
+    <module>jeecg-module-fasting</module>
   </modules>
   <repositories>
     <repository>
@@ -729,8 +724,8 @@
     <profile>
       <id>SpringCloud</id>
       <activation>
-        <!--默认激活配置-->
-        <activeByDefault>true</activeByDefault>
+        <!-- Fast16 单体默认构建，微服务按需 -P SpringCloud -->
+        <activeByDefault>false</activeByDefault>
       </activation>
       <modules>
         <!-- 微服务模块 -->

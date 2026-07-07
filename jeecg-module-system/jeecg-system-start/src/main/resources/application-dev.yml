@@ -407,3 +407,9 @@ justauth:
     type: default
     prefix: 'demo::'
     timeout: 1h
+
+# Fast16 微信小程序（未配置时使用 dev openId 回退）
+wx:
+  mini:
+    app-id: ''
+    app-secret: ''

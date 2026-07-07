@@ -18,10 +18,16 @@
             <artifactId>jeecg-system-biz</artifactId>
             <version>${jeecgboot.version}</version>
         </dependency>
-        <!-- DEMO 示例模块 -->
+        <!-- App 用户模块（微信登录等） -->
         <dependency>
-            <groupId>org.jeecgframework.boot3</groupId>
-            <artifactId>jeecg-module-demo</artifactId>
+            <groupId>org.jeecg</groupId>
+            <artifactId>jeecg-module-user-biz</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
+        <!-- Fast16 轻断食业务模块 -->
+        <dependency>
+            <groupId>org.jeecg</groupId>
+            <artifactId>jeecg-module-fasting-biz</artifactId>
             <version>${jeecgboot.version}</version>
         </dependency>
         

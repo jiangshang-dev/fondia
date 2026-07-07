@@ -16,6 +16,7 @@ import org.jeecg.modules.user.dto.ResetPasswordDTO;
 import org.jeecg.modules.user.dto.SendResetPasswordCodeDTO;
 import org.jeecg.modules.user.dto.ThirdPartyLoginDTO;
 import org.jeecg.modules.user.dto.UpdateUserProfileDTO;
+import org.jeecg.modules.user.dto.WxMiniLoginDTO;
 import org.jeecg.modules.user.entity.FdUser;
 import org.jeecg.modules.user.entity.FdUserAuth;
 import org.jeecg.modules.user.config.HuaweiOAuthProperties;
@@ -26,6 +27,7 @@ import org.jeecg.modules.user.service.HuaweiOAuthClient;
 import org.jeecg.modules.user.service.IFdUserAuthService;
 import org.jeecg.modules.user.service.IFdUserService;
 import org.jeecg.modules.user.service.IVerificationCodeService;
+import org.jeecg.modules.user.service.WxMiniProgramClient;
 import org.jeecg.modules.user.util.HuaweiIdTokenUtil;
 import org.jeecg.modules.user.vo.AccountDeletePreviewVO;
 import org.jeecg.modules.user.vo.LoginResultVO;
@@ -66,6 +68,9 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
 
     @Autowired
     private HuaweiOAuthProperties huaweiOAuthProperties;
+
+    @Autowired
+    private WxMiniProgramClient wxMiniProgramClient;
 
     private Map<String, ThirdPartyLoginHandler> handlerMap;
 
@@ -286,6 +291,18 @@ public class FdUserServiceImpl extends ServiceImpl<FdUserMapper, FdUser> impleme
         thirdPartyLoginDTO.setAvatar(avatar);
         thirdPartyLoginDTO.setPhone(loginDTO.getPhone());
 
+        return thirdPartyLogin(thirdPartyLoginDTO);
+    }
+
+    @Override
+    public LoginResultVO wxMiniLogin(WxMiniLoginDTO loginDTO) {
+        String openId = wxMiniProgramClient.codeToOpenId(loginDTO.getCode());
+        ThirdPartyLoginDTO thirdPartyLoginDTO = new ThirdPartyLoginDTO();
+        thirdPartyLoginDTO.setIdentityType(IdentityTypeEnum.WECHAT.getCode());
+        thirdPartyLoginDTO.setIdentifier(openId);
+        thirdPartyLoginDTO.setCredential(loginDTO.getCode());
+        thirdPartyLoginDTO.setNickname(loginDTO.getNickname());
+        thirdPartyLoginDTO.setAvatar(loginDTO.getAvatar());
         return thirdPartyLogin(thirdPartyLoginDTO);
     }
 

@@ -191,25 +191,15 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/user/profile/**", "anon");
         filterChainDefinitionMap.put("/user/upload/**", "anon");
         filterChainDefinitionMap.put("/user/common/static/**", "anon");
-        filterChainDefinitionMap.put("/cuisine/category/**", "anon");
-        filterChainDefinitionMap.put("/cuisine/recipe/**", "anon");
-        filterChainDefinitionMap.put("/cuisine/tag/**", "anon");
-        filterChainDefinitionMap.put("/interaction/browse/**", "anon");
-        filterChainDefinitionMap.put("/interaction/collect/**", "anon");
-        filterChainDefinitionMap.put("/interaction/comment/**", "anon");
-        filterChainDefinitionMap.put("/interaction/like/**", "anon");
-        filterChainDefinitionMap.put("/cuisine/banner/**", "anon");
         filterChainDefinitionMap.put("/user/feedback/**", "anon");
         filterChainDefinitionMap.put("/user/account/**", "anon");
-        filterChainDefinitionMap.put("/support/session/transfer/**", "anon");
-        filterChainDefinitionMap.put("/support/session/**", "anon");
-        filterChainDefinitionMap.put("/search/**", "anon");
-        filterChainDefinitionMap.put("/member/mall/**", "anon");
-        filterChainDefinitionMap.put("/member/checkin/**", "anon");
-        filterChainDefinitionMap.put("/member/**", "anon");
-        filterChainDefinitionMap.put("/member/points/**", "anon");
-        filterChainDefinitionMap.put("/support/**", "anon");
-        filterChainDefinitionMap.put("/payment/**", "anon");
+        // Fast16 轻断食小程序 API（本地计时优先，可选登录）
+        filterChainDefinitionMap.put("/fasting/app/plans", "anon");
+        filterChainDefinitionMap.put("/fasting/app/plans/**", "anon");
+        filterChainDefinitionMap.put("/fasting/app/setting", "anon");
+        filterChainDefinitionMap.put("/fasting/app/setting/**", "anon");
+        filterChainDefinitionMap.put("/fasting/app/session/**", "anon");
+        filterChainDefinitionMap.put("/fasting/app/stats/**", "anon");
 
         //错误路径排除
         filterChainDefinitionMap.put("/error", "anon");
