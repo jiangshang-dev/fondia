@@ -407,5 +407,5 @@ justauth:
 # Fast16 微信小程序（未配置时使用 dev openId 回退）
 wx:
   mini:
-    app-id: ''
-    app-secret: ''
+    app-id: 'wx0737756284a199d3'
+    app-secret: 'aecdd4ecd0a81f31e7a173ccf55041bb'
