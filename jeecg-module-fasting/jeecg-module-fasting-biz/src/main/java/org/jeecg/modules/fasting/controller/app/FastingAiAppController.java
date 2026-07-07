@@ -10,11 +10,13 @@ import org.jeecg.modules.fasting.service.IFdFastAiMessageService;
 import org.jeecg.modules.fasting.util.FastingAppContext;
 import org.jeecg.modules.fasting.vo.FastAiChatVO;
 import org.jeecg.modules.user.service.IFdUserService;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Tag(name = "Fast16-AI")
 @RestController
@@ -26,7 +28,14 @@ public class FastingAiAppController {
     @Resource
     private IFdUserService userService;
 
-    @Operation(summary = "AI问答")
+    @Operation(summary = "AI问答（流式 SSE，推荐）")
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamChat(HttpServletRequest request, @Validated @RequestBody FastAiChatDTO dto) {
+        Long userId = FastingAppContext.resolveUserId(request, userService);
+        return aiMessageService.streamChat(userId, dto);
+    }
+
+    @Operation(summary = "AI问答（非流式，兼容）")
     @PostMapping("/chat")
     public Result<FastAiChatVO> chat(HttpServletRequest request, @Validated @RequestBody FastAiChatDTO dto) {
         Long userId = FastingAppContext.resolveUserId(request, userService);

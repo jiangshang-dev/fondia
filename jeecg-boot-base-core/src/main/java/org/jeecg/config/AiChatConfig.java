@@ -10,6 +10,17 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "jeecg.ai-chat")
 public class AiChatConfig {
 
+    /** 是否启用默认对话模型 */
+    private boolean enabled = true;
+    /** 默认对话模型 */
+    private String model;
+    /** 默认对话 API Key */
+    private String apiKey;
+    /** 默认对话 API Host */
+    private String apiHost;
+    /** 超时（秒） */
+    private int timeout = 60;
+
     /**
      * skills配置文件路径
      */

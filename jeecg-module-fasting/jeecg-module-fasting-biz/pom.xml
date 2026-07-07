@@ -22,6 +22,12 @@
             <artifactId>jeecg-module-user-biz</artifactId>
             <version>${jeecgboot.version}</version>
         </dependency>
+        <!-- JeecgBoot AI（流式大模型，读取 jeecg.ai-chat 配置） -->
+        <dependency>
+            <groupId>org.jeecgframework.boot3</groupId>
+            <artifactId>jeecg-boot-module-airag</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
