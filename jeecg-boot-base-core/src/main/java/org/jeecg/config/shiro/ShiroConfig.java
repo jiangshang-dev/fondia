@@ -201,6 +201,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/fasting/app/session/**", "anon");
         filterChainDefinitionMap.put("/fasting/app/stats/**", "anon");
         filterChainDefinitionMap.put("/fasting/app/meals/**", "anon");
+        filterChainDefinitionMap.put("/fasting/app/ai/**", "anon");
 
         //错误路径排除
         filterChainDefinitionMap.put("/error", "anon");
