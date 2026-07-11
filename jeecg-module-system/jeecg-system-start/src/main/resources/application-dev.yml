@@ -188,7 +188,7 @@ jeecg:
   ai-chat:
     enabled: true
     model: deepseek-v4-pro
-    apiKey: sk-ac601a9e2b4b43a99bb45ccf73616ba4
+    apiKey: sk-250ed9d26e9e4ff3aa38ba5cfcbc6715
     apiHost: https://api.deepseek.com
     timeout: 60
     skills-dir:
