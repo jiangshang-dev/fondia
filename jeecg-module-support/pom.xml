@@ -13,7 +13,7 @@
     <artifactId>jeecg-module-support</artifactId>
     <packaging>pom</packaging>
     <description>
-        在线客服模块支持
+        AI/在线客服模块支持
     </description>
 
     <modules>
