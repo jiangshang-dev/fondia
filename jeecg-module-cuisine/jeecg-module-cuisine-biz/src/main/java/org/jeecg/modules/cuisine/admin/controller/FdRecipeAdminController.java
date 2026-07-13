@@ -94,7 +94,7 @@ public class FdRecipeAdminController extends JeecgController<FdRecipe, IFdRecipe
     @PostMapping("/rebuildSearchIndex")
     public Result<String> rebuildSearchIndex() {
         int count = service.rebuildAllRecipeSearchIndex();
-        return Result.OK("已向 RabbitMQ 发送 " + count + " 条索引同步消息，请确认 jeecg-search 与 RabbitMQ 正常运行");
+        return Result.OK("已同步 " + count + " 条菜谱到搜索索引");
     }
 
     @AutoLog(value = "删除菜谱", operateType = CommonConstant.OPERATE_TYPE_4)

@@ -3,22 +3,20 @@ package org.jeecg.modules.support.tool;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.util.oConvertUtils;
-import org.jeecg.modules.support.api.CsSearchFeignClient;
-import org.jeecg.modules.support.api.vo.RecipeSearchFeignVO;
+import org.jeecg.modules.service.IRecipeSearchService;
 import org.jeecg.modules.support.vo.AiRecipeCardVO;
+import org.jeecg.modules.vo.RecipeSearchItemVO;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 食谱搜索 Tool：调用 jeecg-search（ES）查询 App 内菜谱。
- * 供 AI 对话工具调用结果补全、APP_LINK 跳转链接构建等场景使用。
+ * 食谱搜索 Tool：调用 search 模块（ES）查询 App 内菜谱。
  */
 @Slf4j
 @Component
@@ -28,7 +26,7 @@ public class SearchTool {
     public static final String RECIPE_URL_SCHEME = "fondia://recipe/";
 
     @Resource
-    private CsSearchFeignClient searchFeignClient;
+    private IRecipeSearchService recipeSearchService;
 
     /**
      * 查询食谱，返回 JSON 数组字符串（与 Airag search_fondia_recipe Tool 输出格式一致）。
@@ -61,17 +59,12 @@ public class SearchTool {
         }
         int pageSize = limit == null || limit <= 0 ? 3 : Math.min(limit, 5);
         try {
-            Result<Page<RecipeSearchFeignVO>> result =
-                    searchFeignClient.searchRecipe(query.trim(), 1, pageSize);
-            if (result == null || !result.isSuccess() || result.getResult() == null) {
-                return List.of();
-            }
-            List<RecipeSearchFeignVO> records = result.getResult().getRecords();
-            if (records == null || records.isEmpty()) {
+            IPage<RecipeSearchItemVO> page = recipeSearchService.searchRecipes(query.trim(), 1, pageSize);
+            if (page == null || page.getRecords() == null || page.getRecords().isEmpty()) {
                 return List.of();
             }
             List<AiRecipeCardVO> cards = new ArrayList<>();
-            for (RecipeSearchFeignVO record : records) {
+            for (RecipeSearchItemVO record : page.getRecords()) {
                 if (record == null || oConvertUtils.isEmpty(record.getId())) {
                     continue;
                 }
@@ -91,7 +84,7 @@ public class SearchTool {
         return RECIPE_URL_SCHEME + recipeId;
     }
 
-    private AiRecipeCardVO toCard(RecipeSearchFeignVO record) {
+    private AiRecipeCardVO toCard(RecipeSearchItemVO record) {
         return AiRecipeCardVO.builder()
                 .id(record.getId())
                 .title(record.getTitle())

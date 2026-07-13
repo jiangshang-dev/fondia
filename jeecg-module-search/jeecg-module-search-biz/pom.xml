@@ -46,11 +46,6 @@
             <artifactId>jeecg-module-media</artifactId>
             <version>3.9.2</version>
         </dependency>
-        <!-- RabbitMQ：仅搜索服务消费消息 -->
-        <dependency>
-            <groupId>org.jeecgframework.boot3</groupId>
-            <artifactId>jeecg-boot-starter-rabbitmq</artifactId>
-        </dependency>
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>

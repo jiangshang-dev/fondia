@@ -725,13 +725,9 @@
         <config.password/>
       </properties>
     </profile>
-    <!-- SpringCloud运行环境 -->
+    <!-- SpringCloud运行环境（单体模式默认不启用，需要微服务时：mvn -P SpringCloud） -->
     <profile>
       <id>SpringCloud</id>
-      <activation>
-        <!--默认激活配置-->
-        <activeByDefault>true</activeByDefault>
-      </activation>
       <modules>
         <!-- 微服务模块 -->
         <module>jeecg-server-cloud</module>

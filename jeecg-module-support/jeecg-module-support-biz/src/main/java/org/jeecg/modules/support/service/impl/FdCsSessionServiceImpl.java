@@ -8,7 +8,8 @@ import jakarta.annotation.Resource;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
-import org.jeecg.modules.support.api.CsUserFeignClient;
+import org.jeecg.modules.user.service.IFdUserService;
+import org.jeecg.modules.user.vo.UserInfoVO;
 import org.jeecg.modules.support.dto.AiChatDTO;
 import org.jeecg.modules.support.dto.SendMessageDTO;
 import org.jeecg.modules.support.dto.SessionCreateDTO;
@@ -59,7 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsSession> implements IFdCsSessionService {
 
     @Resource
-    private CsUserFeignClient userFeignClient;
+    private IFdUserService fdUserService;
 
     @Resource
     private IFdCsConfigService configService;
@@ -85,15 +86,11 @@ public class FdCsSessionServiceImpl extends ServiceImpl<FdCsSessionMapper, FdCsS
 
     @Override
     public Long resolveUserId(String authorization) {
-        Result<Map<String, Object>> result = userFeignClient.getUserInfo(authorization);
-        if (result == null || !result.isSuccess() || result.getResult() == null) {
+        UserInfoVO userInfo = fdUserService.getUserInfo(authorization);
+        if (userInfo == null || userInfo.getId() == null) {
             throw new JeecgBootException("用户未登录或Token无效");
         }
-        Object id = result.getResult().get("id");
-        if (id == null) {
-            throw new JeecgBootException("无法获取用户信息");
-        }
-        return Long.valueOf(String.valueOf(id));
+        return userInfo.getId();
     }
 
     @Override

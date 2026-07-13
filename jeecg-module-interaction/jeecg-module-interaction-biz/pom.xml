@@ -51,5 +51,10 @@
             <artifactId>tea-openapi</artifactId>
             <version>0.3.6</version>
         </dependency>
+        <dependency>
+            <groupId>org.jeecg</groupId>
+            <artifactId>jeecg-module-user-biz</artifactId>
+            <version>3.9.2</version>
+        </dependency>
     </dependencies>
 </project>

@@ -2,36 +2,39 @@ package org.jeecg.modules.support.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
+import org.jeecg.modules.airag.app.service.IAiragChatService;
+import org.jeecg.modules.airag.app.vo.ChatSendParams;
+import org.jeecg.modules.airag.common.consts.AiragConsts;
+import org.jeecg.modules.airag.common.utils.AiragLocalCache;
+import org.jeecg.modules.airag.common.vo.event.EventData;
+import org.jeecg.modules.airag.fondia.AiragCacheUserHolder;
+import org.jeecg.modules.airag.fondia.AiragRequestIdHolder;
 import org.jeecg.modules.support.service.ICsAiService;
 import org.jeecg.modules.support.tool.CsAiStreamToolCollector;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+/**
+ * 客服 AI 服务（单体模式：同进程注入 IAiragChatService，不走 HTTP/Feign）。
+ */
 @Slf4j
 @Service
 public class CsAiServiceImpl implements ICsAiService {
 
-    private static final int CONNECT_TIMEOUT_MS = 15_000;
     private static final int READ_TIMEOUT_MS = 300_000;
+    private static final int POLL_INTERVAL_MS = 100;
 
-    @Value("${jeecg.support.ai-service-name:jeecg-system}")
-    private String aiServiceName;
-
-    @Value("${jeecg.support.ai-chat-base-url:}")
-    private String aiChatBaseUrl;
+    @Resource
+    private IAiragChatService airagChatService;
 
     @Override
     public AiChatResult chat(String appId, String content, String conversationId, String authorization, Long userId) {
@@ -58,74 +61,72 @@ public class CsAiServiceImpl implements ICsAiService {
             throw new JeecgBootException("未配置AI应用ID，请在管理后台「客服配置」中设置 aiAppId");
         }
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("content", content);
-        body.put("appId", appId);
-        body.put("conversationId", conversationId);
-        body.put("izSaveSession", true);
-
-        String url = resolveChatUrl();
-        String requestJson = JSON.toJSONString(body);
-        log.info("[CsAi] 流式调用 Airag appId={} url={}", appId, url);
-
-        HttpURLConnection conn = null;
-        StringBuilder replyBuilder = new StringBuilder();
-        CsAiStreamToolCollector toolCollector = new CsAiStreamToolCollector();
-        String newConversationId = conversationId;
+        if (userId != null) {
+            AiragCacheUserHolder.set("fondia_" + userId);
+        }
         try {
-            conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
-            conn.setReadTimeout(READ_TIMEOUT_MS);
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setRequestProperty("Accept", "text/event-stream, application/json");
-            applyAuthorization(conn, authorization);
-            applyCacheUser(conn, userId);
+            ChatSendParams params = new ChatSendParams();
+            params.setContent(content);
+            params.setAppId(appId);
+            params.setConversationId(conversationId);
+            params.setIzSaveSession(true);
 
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(requestJson.getBytes(StandardCharsets.UTF_8));
+            log.info("[CsAi] 本地调用 Airag appId={}", appId);
+            SseEmitter emitter = airagChatService.send(params);
+            String requestId = AiragRequestIdHolder.get();
+            if (oConvertUtils.isEmpty(requestId)) {
+                throw new JeecgBootException("AI服务初始化失败");
             }
 
-            int status = conn.getResponseCode();
-            if (status < 200 || status >= 300) {
-                String errBody = readStream(conn.getErrorStream());
-                log.error("[CsAi] Airag 返回 HTTP {} body={}", status, errBody);
-                throw new JeecgBootException("AI服务返回异常(HTTP " + status + ")");
-            }
+            CountDownLatch done = new CountDownLatch(1);
+            emitter.onCompletion(done::countDown);
+            emitter.onError(e -> done.countDown());
 
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (!line.startsWith("data:")) {
-                        continue;
-                    }
-                    String payload = line.substring(5).trim();
-                    if (payload.isEmpty() || "[DONE]".equals(payload)) {
-                        continue;
-                    }
-                    onEvent.accept(payload);
-                    toolCollector.consume(payload);
-                    String[] holder = {newConversationId};
-                    appendMessageFromEvent(payload, replyBuilder, holder);
-                    if (oConvertUtils.isNotEmpty(holder[0])) {
-                        newConversationId = holder[0];
+            StringBuilder replyBuilder = new StringBuilder();
+            CsAiStreamToolCollector toolCollector = new CsAiStreamToolCollector();
+            String newConversationId = conversationId;
+            int lastIndex = 0;
+            long deadline = System.currentTimeMillis() + READ_TIMEOUT_MS;
+
+            while (System.currentTimeMillis() < deadline) {
+                List<EventData> history = AiragLocalCache.get(AiragConsts.CACHE_TYPE_SSE_HISTORY_MSG, requestId);
+                if (history != null) {
+                    while (lastIndex < history.size()) {
+                        EventData event = history.get(lastIndex++);
+                        String payload = JSON.toJSONString(event);
+                        onEvent.accept(payload);
+                        toolCollector.consume(payload);
+                        String[] holder = {newConversationId};
+                        appendMessageFromEvent(payload, replyBuilder, holder);
+                        if (oConvertUtils.isNotEmpty(holder[0])) {
+                            newConversationId = holder[0];
+                        }
+                        String eventType = event.getEvent();
+                        if (EventData.EVENT_MESSAGE_END.equals(eventType)
+                                || EventData.EVENT_FLOW_ERROR.equals(eventType)) {
+                            done.countDown();
+                        }
                     }
                 }
+                if (done.getCount() == 0) {
+                    break;
+                }
+                Thread.sleep(POLL_INTERVAL_MS);
             }
 
             String reply = replyBuilder.toString().trim();
             return new StreamChatResult(reply, newConversationId, toolCollector.getRecipes());
         } catch (JeecgBootException e) {
             throw e;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new JeecgBootException("AI服务调用被中断");
         } catch (Exception e) {
-            log.error("[CsAi] 流式调用 Airag 失败 url={}", url, e);
+            log.error("[CsAi] 本地调用 Airag 失败 appId={}", appId, e);
             throw new JeecgBootException("AI服务暂不可用：" + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
         } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+            AiragRequestIdHolder.clear();
+            AiragCacheUserHolder.clear();
         }
     }
 
@@ -138,14 +139,14 @@ public class CsAiServiceImpl implements ICsAiService {
             conversationHolder[0] = event.getString("conversationId");
         }
         String eventType = event.getString("event");
-        if (!"MESSAGE".equals(eventType) && !"THINKING".equals(eventType)) {
+        if (!EventData.EVENT_MESSAGE.equals(eventType) && !EventData.EVENT_THINKING.equals(eventType)) {
             return;
         }
         JSONObject data = event.getJSONObject("data");
         if (data == null) {
             return;
         }
-        if ("THINKING".equals(eventType)) {
+        if (EventData.EVENT_THINKING.equals(eventType)) {
             return;
         }
         if (data.containsKey("message")) {
@@ -153,54 +154,6 @@ public class CsAiServiceImpl implements ICsAiService {
         }
         if (data.containsKey("content")) {
             replyBuilder.append(data.getString("content"));
-        }
-    }
-
-    private static void applyCacheUser(HttpURLConnection conn, Long userId) {
-        if (userId == null) {
-            return;
-        }
-        conn.setRequestProperty("X-Airag-Cache-User", "fondia_" + userId);
-    }
-
-    private static void applyAuthorization(HttpURLConnection conn, String authorization) {
-        if (oConvertUtils.isEmpty(authorization)) {
-            return;
-        }
-        String token = authorization.trim();
-        if (!token.regionMatches(true, 0, "Bearer ", 0, 7)) {
-            token = "Bearer " + token;
-        }
-        conn.setRequestProperty("Authorization", token);
-    }
-
-    private String resolveChatUrl() {
-        if (oConvertUtils.isNotEmpty(aiChatBaseUrl)) {
-            String base = aiChatBaseUrl.trim();
-            if (base.endsWith("/")) {
-                base = base.substring(0, base.length() - 1);
-            }
-            if (base.endsWith("/airag/chat/send")) {
-                return base;
-            }
-            return base + "/airag/chat/send";
-        }
-        return "http://" + aiServiceName + "/airag/chat/send";
-    }
-
-    private static String readStream(java.io.InputStream stream) {
-        if (stream == null) {
-            return "";
-        }
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            return "";
         }
     }
 }

@@ -24,6 +24,43 @@
             <artifactId>jeecg-module-demo</artifactId>
             <version>${jeecgboot.version}</version>
         </dependency>
+
+        <!-- Fondia 业务模块（单体模式） -->
+        <dependency>
+            <groupId>org.jeecg</groupId>
+            <artifactId>jeecg-module-user-biz</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecg</groupId>
+            <artifactId>jeecg-module-cuisine-biz</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecg</groupId>
+            <artifactId>jeecg-module-interaction-biz</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecg.modules.support</groupId>
+            <artifactId>jeecg-module-support-biz</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecg.modules</groupId>
+            <artifactId>jeecg-module-search-biz</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecg.modules.member</groupId>
+            <artifactId>jeecg-module-member-biz</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jeecg.modules.payment</groupId>
+            <artifactId>jeecg-module-payment-biz</artifactId>
+            <version>${jeecgboot.version}</version>
+        </dependency>
         
         <!-- flyway 数据库自动升级 -->
         <dependency>

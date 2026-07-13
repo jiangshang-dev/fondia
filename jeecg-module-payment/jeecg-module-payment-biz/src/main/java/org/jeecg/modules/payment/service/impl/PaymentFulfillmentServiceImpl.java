@@ -1,12 +1,16 @@
 package org.jeecg.modules.payment.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
-import org.jeecg.modules.payment.api.IMemberOrderFeignClient;
+import org.jeecg.modules.member.entity.FdMemberOrder;
+import org.jeecg.modules.member.entity.FdMemberPlan;
+import org.jeecg.modules.member.service.IFdMemberOrderService;
+import org.jeecg.modules.member.service.IFdMemberPlanService;
+import org.jeecg.modules.member.service.app.IMemberPaymentAppService;
 import org.jeecg.modules.payment.config.FondiaPaymentProperties;
 import org.jeecg.modules.payment.constant.PayChannel;
 import org.jeecg.modules.payment.dto.PaymentVerifyDTO;
@@ -18,31 +22,31 @@ import org.springframework.stereotype.Service;
 public class PaymentFulfillmentServiceImpl implements IPaymentFulfillmentService {
 
     @Resource
-    private IMemberOrderFeignClient memberOrderFeignClient;
+    private IFdMemberOrderService orderService;
+    @Resource
+    private IFdMemberPlanService planService;
+    @Resource
+    private IMemberPaymentAppService paymentAppService;
     @Resource
     private FondiaPaymentProperties properties;
 
     @Override
     public JSONObject loadOrder(String orderNo) {
-        Result<JSONObject> result = memberOrderFeignClient.getOrder(orderNo, properties.getInternalSecret());
-        if (result == null || !result.isSuccess() || result.getResult() == null) {
-            throw new JeecgBootException(result != null ? result.getMessage() : "订单不存在");
+        FdMemberOrder order = findOrder(orderNo);
+        FdMemberPlan plan = planService.getById(order.getPlanId());
+        JSONObject data = (JSONObject) JSONObject.toJSON(order);
+        if (plan != null) {
+            data.put("appleProductId", plan.getAppleProductId());
+            data.put("googleProductId", plan.getGoogleProductId());
         }
-        return result.getResult();
+        return data;
     }
 
     @Override
     public JSONObject fulfill(String orderNo, String externalTradeNo, String payChannel, String externalPayload) {
-        Result<JSONObject> result = memberOrderFeignClient.fulfillOrder(
-                orderNo,
-                externalTradeNo,
-                payChannel,
-                externalPayload,
-                properties.getInternalSecret());
-        if (result == null || !result.isSuccess() || result.getResult() == null) {
-            throw new JeecgBootException(result != null ? result.getMessage() : "履约失败");
-        }
-        return result.getResult();
+        FdMemberOrder order = paymentAppService.confirmPaidFromPayment(
+                orderNo, externalTradeNo, payChannel, externalPayload);
+        return (JSONObject) JSONObject.toJSON(order);
     }
 
     @Override
@@ -68,7 +72,6 @@ public class PaymentFulfillmentServiceImpl implements IPaymentFulfillmentService
         if (PayChannel.ALIPAY.equals(channel) && properties.isMockEnabled()) {
             externalTradeNo = "MOCK_ALIPAY_" + dto.getOrderNo();
         } else if (PayChannel.APPLE_IAP.equals(channel) || PayChannel.GOOGLE_PLAY.equals(channel)) {
-            // P2/P3: 接入 Apple / Google 服务端验单；当前先记录客户端凭证
             if (oConvertUtils.isEmpty(dto.getReceipt())) {
                 throw new JeecgBootException("缺少支付凭证");
             }
@@ -76,5 +79,14 @@ public class PaymentFulfillmentServiceImpl implements IPaymentFulfillmentService
         }
 
         return fulfill(dto.getOrderNo(), externalTradeNo, channel, dto.getReceipt());
+    }
+
+    private FdMemberOrder findOrder(String orderNo) {
+        FdMemberOrder order = orderService.getOne(new LambdaQueryWrapper<FdMemberOrder>()
+                .eq(FdMemberOrder::getOrderNo, orderNo), false);
+        if (order == null) {
+            throw new JeecgBootException("订单不存在");
+        }
+        return order;
     }
 }

@@ -6,16 +6,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.util.oConvertUtils;
+import org.jeecg.modules.service.IRecipeSearchService;
 import org.jeecg.modules.support.entity.FdCsMessage;
 import org.jeecg.modules.support.enums.CsSenderType;
 import org.jeecg.modules.support.mapper.FdCsMessageMapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.jeecg.common.api.vo.Result;
-import org.jeecg.modules.support.api.CsSearchFeignClient;
-import org.jeecg.modules.support.api.vo.RecipeSearchFeignVO;
 import org.jeecg.modules.support.service.IAiRecipeMatchService;
 import org.jeecg.modules.support.tool.SearchTool;
 import org.jeecg.modules.support.vo.AiRecipeCardVO;
+import org.jeecg.modules.vo.RecipeSearchItemVO;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
@@ -47,7 +45,7 @@ public class AiRecipeMatchServiceImpl implements IAiRecipeMatchService {
     }
 
     @Resource
-    private CsSearchFeignClient searchFeignClient;
+    private IRecipeSearchService recipeSearchService;
 
     @Resource
     private FdCsMessageMapper messageMapper;
@@ -311,15 +309,12 @@ public class AiRecipeMatchServiceImpl implements IAiRecipeMatchService {
             return null;
         }
         try {
-            Result<Page<RecipeSearchFeignVO>> result = searchFeignClient.searchRecipe(keyword, 1, 3);
-            if (result == null || !result.isSuccess() || result.getResult() == null) {
+            var page = recipeSearchService.searchRecipes(keyword, 1, 3);
+            if (page == null || page.getRecords() == null || page.getRecords().isEmpty()) {
                 return null;
             }
-            List<RecipeSearchFeignVO> records = result.getResult().getRecords();
-            if (records == null || records.isEmpty()) {
-                return null;
-            }
-            RecipeSearchFeignVO best = pickBestRecord(keyword, records);
+            List<RecipeSearchItemVO> records = page.getRecords();
+            RecipeSearchItemVO best = pickBestRecord(keyword, records);
             return AiRecipeCardVO.builder()
                     .id(best.getId())
                     .title(best.getTitle())
@@ -334,8 +329,8 @@ public class AiRecipeMatchServiceImpl implements IAiRecipeMatchService {
         }
     }
 
-    private RecipeSearchFeignVO pickBestRecord(String keyword, List<RecipeSearchFeignVO> records) {
-        for (RecipeSearchFeignVO item : records) {
+    private RecipeSearchItemVO pickBestRecord(String keyword, List<RecipeSearchItemVO> records) {
+        for (RecipeSearchItemVO item : records) {
             if (item == null) {
                 continue;
             }

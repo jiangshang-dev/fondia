@@ -22,9 +22,5 @@
             <groupId>org.jeecgframework.boot3</groupId>
             <artifactId>jeecg-boot-base-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
     </dependencies>
 </project>

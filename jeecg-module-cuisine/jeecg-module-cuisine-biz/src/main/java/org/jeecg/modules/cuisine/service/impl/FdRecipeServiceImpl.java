@@ -1,12 +1,9 @@
 package org.jeecg.modules.cuisine.service.impl;
 
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.jeecg.boot.starter.rabbitmq.client.RabbitMqClient;
-import org.jeecg.common.constant.RabbitConstant;
 import org.jeecg.common.dto.RecipeSearchSyncMessage;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.util.oConvertUtils;
@@ -22,6 +19,7 @@ import org.jeecg.modules.cuisine.vo.RecipeAdminDetailVO;
 import org.jeecg.modules.cuisine.vo.RecipeAdminSaveDTO;
 import org.jeecg.modules.cuisine.vo.RecipeDetailVO;
 import org.jeecg.modules.cuisine.vo.RecipeListItemVO;
+import org.jeecg.modules.service.IRecipeSearchService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -54,7 +52,7 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
     private IRecipeVideoService recipeVideoService;
 
     @Resource
-    private RabbitMqClient rabbitMqClient;
+    private IRecipeSearchService recipeSearchService;
 
     @Override
     public IPage<RecipeListItemVO> pageRecipes(Long cuisineId, Long categoryId, Integer subType,
@@ -206,17 +204,15 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
     @Override
     public void publishRecipeSearchSync(Long recipeId) {
         RecipeSearchSyncMessage message = buildSearchSyncMessage(recipeId, RecipeSearchSyncMessage.ACTION_SAVE);
-        if (message != null) {
-            rabbitMqClient.sendMessage(RabbitConstant.SAVE_RECIPE, JSONUtil.toJsonStr(message));
-        }
+        syncSearchIndex(message);
     }
 
     @Override
     public void removeRecipeFromSearch(Long recipeId) {
-        RecipeSearchSyncMessage message = new RecipeSearchSyncMessage();
-        message.setAction(RecipeSearchSyncMessage.ACTION_DELETE);
-        message.setId(String.valueOf(recipeId));
-        rabbitMqClient.sendMessage(RabbitConstant.SAVE_RECIPE, JSONUtil.toJsonStr(message));
+        if (recipeSearchService == null) {
+            return;
+        }
+        recipeSearchService.removeRecipe(String.valueOf(recipeId));
     }
 
     @Override
@@ -228,6 +224,13 @@ public class FdRecipeServiceImpl extends ServiceImpl<FdRecipeMapper, FdRecipe>
             publishRecipeSearchSync(recipe.getId());
         }
         return recipes.size();
+    }
+
+    private void syncSearchIndex(RecipeSearchSyncMessage message) {
+        if (message == null || recipeSearchService == null) {
+            return;
+        }
+        recipeSearchService.syncRecipe(message);
     }
 
     private RecipeSearchSyncMessage buildSearchSyncMessage(Long recipeId, String action) {

@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.dto.RecipeSearchSyncMessage;
 import org.jeecg.common.es.JeecgElasticsearchTemplate;
@@ -13,6 +12,7 @@ import org.jeecg.common.util.oConvertUtils;
 import org.jeecg.modules.constant.SearchConstant;
 import org.jeecg.modules.service.IRecipeSearchService;
 import org.jeecg.modules.vo.RecipeSearchItemVO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Service
 public class RecipeSearchServiceImpl implements IRecipeSearchService, ApplicationRunner {
 
-    @Resource
+    @Autowired(required = false)
     private JeecgElasticsearchTemplate elasticsearchTemplate;
 
     @Override

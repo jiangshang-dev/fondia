@@ -29,6 +29,8 @@ import org.jeecg.config.AiChatConfig;
 import org.jeecg.config.AiRagConfigBean;
 import org.jeecg.config.JeecgBaseConfig;
 import org.jeecg.config.vo.Path;
+import org.jeecg.modules.airag.fondia.AiragCacheUserHolder;
+import org.jeecg.modules.airag.fondia.AiragRequestIdHolder;
 import org.jeecg.modules.airag.app.consts.AiAppConsts;
 import org.jeecg.modules.airag.app.consts.Prompts;
 import org.jeecg.modules.airag.app.entity.AiragApp;
@@ -977,6 +979,7 @@ public class AiragChatServiceImpl implements IAiragChatService {
         AiragApp aiApp = chatConversation.getApp();
         // 每次会话都生成一个新的,用来缓存emitter
         String requestId = UUIDGenerator.generate();
+        AiragRequestIdHolder.set(requestId);
         SseEmitter emitter = createSSE(requestId);
         // 缓存emitter
         AiragLocalCache.put(AiragConsts.CACHE_TYPE_SSE, requestId, emitter);
@@ -1864,8 +1867,12 @@ public class AiragChatServiceImpl implements IAiragChatService {
     }
 
     private String resolveCacheUser(HttpServletRequest httpRequest) {
+        String fondiaUser = AiragCacheUserHolder.get();
+        if (oConvertUtils.isNotEmpty(fondiaUser)) {
+            return fondiaUser;
+        }
         if (httpRequest != null) {
-            String fondiaUser = httpRequest.getHeader("X-Airag-Cache-User");
+            fondiaUser = httpRequest.getHeader("X-Airag-Cache-User");
             if (oConvertUtils.isNotEmpty(fondiaUser)) {
                 return fondiaUser;
             }

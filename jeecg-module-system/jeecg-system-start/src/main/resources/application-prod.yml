@@ -144,9 +144,9 @@ spring:
           slow-sql-millis: 5000
       datasource:
         master:
-          url: jdbc:mysql://127.0.0.1:3306/jeecg-boot?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-          username: root
-          password: root
+          url: jdbc:mysql://rm-2zewdohwf3z10y6ru6o.mysql.rds.aliyuncs.com:3306/fondia?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+          username: jeecg
+          password: Ling@7ujm
           driver-class-name: com.mysql.cj.jdbc.Driver
           # 多数据源配置
           #multi-datasource1:
@@ -161,6 +161,26 @@ spring:
       host: 127.0.0.1
       port: 6379
       password:
+  rabbitmq:
+    host: jeecg-boot-rabbitmq
+    username: admin
+    password: admin
+    port: 5672
+    publisher-confirms: true
+    publisher-returns: true
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 1
+        max-concurrency: 1
+        retry:
+          enabled: true
+  # Elasticsearch（菜谱搜索，JeecgBoot 官方配置项）
+  elasticsearch:
+    cluster-name: jeecg-ES
+    cluster-nodes: 127.0.0.1:9200
+    check-enabled: false
 #mybatis plus 设置
 mybatis-plus:
   mapper-locations: classpath*:org/jeecg/**/xml/*Mapper.xml
@@ -283,11 +303,11 @@ jeecg:
   smsSendType: aliyun
   #阿里云oss存储和大鱼短信秘钥配置
   oss:
-    accessKey: ??
-    secretKey: ??
     endpoint: oss-cn-beijing.aliyuncs.com
-    bucketName: jeecgdev
-    staticDomain: https://static.jeecg.com
+    accessKey: LTAI5t6L1ws4DxUta3siM3mS
+    secretKey: j0suiDkcWrOEx1DW9dcY6QS1muijl5
+    bucketName: jeecgdev-sess
+    staticDomain: jeecgboot
     # 短信模板
     sms-template:
       # 签名
@@ -401,3 +421,34 @@ justauth:
     type: default
     prefix: 'demo::'
     timeout: 1h
+
+
+# 华为账号 OAuth（须与 HarmonyOS App module.json5 metadata.client_id 一致）
+thirdparty:
+  huawei:
+    client-id: '118210823'
+    client-secret: 'ac041967c942034cd3ebf71283248e969b47cd1a2a7728535500007f8d97e147'
+    # client-id: '6917609941030203315'
+    # client-secret: '6e915c6cee509f97b1b547abcd30ab1e5cf88b6379e3fe34c7301465c61774cd'
+    dev-mode: false
+
+fondia:
+  payment:
+    internal-secret: 这里换成随机长字符串至少32位
+    # 开发模拟支付
+    mock-enabled: true
+    allow-client-confirm: false
+    alipay:
+      app-id: 从支付宝开放平台获取
+      private-key: 应用私钥
+      alipay-public-key: 支付宝公钥
+      notify-url: https://你的域名/payment/notify/alipay
+      gateway-url: https://openapi.alipay.com/gateway.do
+  aliyun-green:
+    enabled: true
+    accessKeyId: LTAI5t6L1ws4DxUta3siM3mS
+    accessKeySecret: j0suiDkcWrOEx1DW9dcY6QS1muijl5
+
+aliyun:
+  accessKeyId: LTAI5tAMhyQ5M4ax36oedKcQ
+  accessKeySecret: DqOLunL4Qt8bWSxhi2mEktfcUKacVG
