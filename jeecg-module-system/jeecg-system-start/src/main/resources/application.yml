@@ -4,5 +4,5 @@ spring:
   config:
     import: optional:classpath:config/application-liteflow.yml
   profiles:
-#    active: prod
-    active: '@profile.name@'
+    active: prod
+#    active: '@profile.name@'
