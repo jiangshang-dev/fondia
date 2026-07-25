@@ -1,0 +1,166 @@
+agentscope:
+  ai:
+    # 意图路由：规则优先；use-llm=true 时规则未命中再走小模型 JSON 分类
+    intent:
+      enabled: true
+      use-llm: true
+      fallback-intent: chat
+      keywords:
+        love:
+          - 测算桃花星
+          - 测算配偶星
+          - 正缘
+          - 夫妻关系
+          - 情感模式
+          - 伴侣特质
+        # 八字婚恋/风水类（与 suanming 排盘命理区分开）
+        bazi:
+          - 婚配
+          - 姻缘合盘
+          - 合婚
+          - 风水
+          - 搬家运势
+          - 八字合婚
+        web_12306:
+          - 查询车票
+          - 火车票
+          - 高铁票
+          - 飞机票
+        # 命理排盘/五行十神等（用户口语短词，避免长描述匹配失败）
+        suanming:
+          - 算命
+          - 看命
+          - 批命
+          - 排盘
+          - 八字
+          - 四柱
+          - 八字排盘
+          - 干支
+          - 日主
+          - 十神
+          - 五行
+          - 喜用神
+          - 用神
+          - 大运
+          - 流年
+          - 虚岁
+          - 命盘
+          - 紫微
+          - 紫微斗数
+          - 神煞
+          - 命宫
+          - 身宫
+          - 旺衰
+          - 生辰八字
+        weather:
+          - 天气
+          - 气温
+          - 下雨
+          - 降雨
+          - 预报
+          - 湿度
+          - 刮风
+          - weather
+          - temperature
+        web_search:
+          - 搜索
+          - 搜一下
+          - 联网
+          - 上网查
+          - 最新消息
+          - 最新新闻
+          - 热点
+          - google
+          - 百度一下
+        # 黄历择日/宜忌（与算命排盘区分：问「哪天适合做某事」走这里）
+        huangli:
+          - 黄历
+          - 老黄历
+          - 通胜
+          - 宜忌
+          - 今日宜
+          - 今日忌
+          - 择日
+          - 选日子
+          - 吉日
+          - 凶日
+          - 黄道吉日
+          - 冲煞
+          - 冲什么
+          - 适合结婚
+          - 适合搬家
+          - 适合开业
+          - 哪天适合
+          - 什么日子适合
+          - 农历黄历
+          - 查黄历
+
+    # 可扩展 MCP 清单：新增服务只加配置即可
+    # transport：URL 以 /mcp 结尾 → streamable_http；以 /sse 结尾 → sse
+    mcp-servers:
+      - id: weather
+        name: weather-mcp
+        intents: [weather]
+        transport: streamable_http
+        url: https://mcp.api-inference.modelscope.net/b9fcd9e0937f49/mcp
+        enabled: true
+        timeout-seconds: 60
+        headers:
+          Authorization: Bearer ${MODELSCOPE_MCP_TOKEN:}
+      - id: web_search
+        name: websearch-mcp
+        intents: [web_search]
+        transport: streamable_http
+        url: https://mcp.api-inference.modelscope.net/4cf13c5113b544/mcp
+        enabled: true
+        timeout-seconds: 60
+        headers:
+          Authorization: Bearer ${MODELSCOPE_MCP_TOKEN:}
+      - id: web_12306
+        name: web12306-mcp
+        intents: [web_12306]
+        transport: streamable_http
+        url: https://mcp.api-inference.modelscope.net/a872fd6f703e43/mcp
+        enabled: true
+        timeout-seconds: 60
+        headers:
+          Authorization: Bearer ${MODELSCOPE_MCP_TOKEN:}
+      - id: bazi
+        name: bazi-mcp
+        intents: [bazi]
+        transport: streamable_http
+        url: https://mcp.api-inference.modelscope.net/e2ff06390cfe42/mcp
+        # 远端已 404
+        enabled: true
+        timeout-seconds: 60
+        headers:
+          Authorization: Bearer ${MODELSCOPE_MCP_TOKEN:}
+      - id: love
+        name: love-mcp
+        intents: [love]
+        transport: streamable_http
+        url: https://mcp.api-inference.modelscope.net/97a25c8b9b9540/mcp
+        enabled: true
+        timeout-seconds: 60
+        headers:
+          Authorization: Bearer ${MODELSCOPE_MCP_TOKEN:}
+      - id: huangli
+        name: huangli-mcp
+        intents: [ huangli ]
+        transport: sse
+        url: https://andyzengh-luner-info1.ms.show/gradio_api/mcp/sse
+        # 远端经常超时，默认关闭；可用时再打开
+        enabled: true
+        timeout-seconds: 60
+        headers:
+          Authorization: Bearer ${MODELSCOPE_MCP_TOKEN:}
+      - id: suanming
+        name: suanming-mcp
+        intents: [ suanming ]
+        transport: streamable_http
+        url: https://mcp.api-inference.modelscope.net/ca8bed0a5f1741/mcp
+        # 远端已 404
+        enabled: true
+        timeout-seconds: 60
+        headers:
+          Authorization: Bearer ${MODELSCOPE_MCP_TOKEN:}

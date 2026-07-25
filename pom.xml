@@ -74,6 +74,7 @@
     <jedis.version>3.8.0</jedis.version>
     <baidu-java-sdk.version>4.16.19</baidu-java-sdk.version>
     <joda-time.version>2.12.7</joda-time.version>
+    <agentscope.version>2.0.0-RC4</agentscope.version>
   </properties>
   <modules>
     <module>jeecg-boot-base-core</module>
@@ -86,6 +87,7 @@
     <module>jeecg-module-search</module>
     <module>jeecg-module-member</module>
     <module>jeecg-module-payment</module>
+    <module>jeecg-module-ai</module>
   </modules>
   <repositories>
     <repository>

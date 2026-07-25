@@ -45,8 +45,18 @@
     "uri": "lb://jeecg-interaction"
   },
   {
-    "id": "jeecg-fondia-support-app",
+    "id": "jeecg-fondia-ai-app",
     "order": -7,
+    "predicates": [{
+      "name": "Path",
+      "args": { "_genkey_0": "/agent/ai/**" }
+    }],
+    "filters": [],
+    "uri": "lb://jeecg-agent"
+  },
+  {
+    "id": "jeecg-fondia-support-app",
+    "order": -6,
     "predicates": [{
       "name": "Path",
       "args": { "_genkey_0": "/support/**" }

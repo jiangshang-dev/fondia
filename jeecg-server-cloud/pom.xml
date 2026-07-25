@@ -28,6 +28,7 @@
         <module>jeecg-support-cloud-start</module>
         <module>jeecg-member-cloud-start</module>
         <module>jeecg-payment-cloud-start</module>
+        <module>jeecg-ai-cloud-start</module>
     </modules>
 
 </project>

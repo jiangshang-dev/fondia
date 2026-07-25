@@ -1,0 +1,22 @@
+# AgentScope 引擎配置（由 jeecg-ai-cloud-start / Nacos 引入）
+# Redis 连接复用 Jeecg 框架 spring.redis，无需再配 host/port
+agentscope:
+  demo:
+    llm:
+      base-url: ${LLM_BASE_URL:https://api.deepseek.com/v1}
+      model-name: ${LLM_MODEL_NAME:deepseek-chat}
+      api-key: ${LLM_API_KEY:EMPTY}
+      stream: true
+    agent-name: assistant
+    sys-prompt: |
+      你是一个友好、专业的 AI 助手。
+      你能记住用户在对话中分享的信息，并在后续轮次中自然引用。
+      回答简洁清晰，使用中文。
+      当用户询问天气、车票、联网搜索等专业问题时，优先调用当前已激活的 MCP 工具查询。
+    workspace: ${AGENTSCOPE_WORKSPACE:./.agentscope/workspace}
+    redis:
+      key-prefix: ${AGENTSCOPE_REDIS_KEY_PREFIX:jeecg-ai:session:}
+    memory:
+      compaction-enabled: ${COMPACTION_ENABLED:true}
+      compaction-trigger-messages: ${COMPACTION_TRIGGER_MESSAGES:10}
+      compaction-keep-messages: ${COMPACTION_KEEP_MESSAGES:5}
