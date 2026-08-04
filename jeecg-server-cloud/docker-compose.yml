@@ -1,162 +1,245 @@
-version: '2'
+# 微服务编排已统一到上级目录，请在 jeecg-boot 根目录执行：
+#   cd .. && docker compose up -d --build
+#
+# 本文件保留为兼容入口（相对路径指向本目录模块），行为与 ../docker-compose.yml 一致：
+# - 不创建 MySQL / Redis / ES / RabbitMQ
+# - 网络复用已有 mynet（external: true，不新建）
+# - 通过 extra_hosts 复用宿主机已有容器端口
+# - 附带 SkyWalking OAP + UI（H2 存储，不写你的 ES）
+# - 前端：./web/dist → jeecg-vue（http://localhost:3100）
+
+x-infra-hosts: &infra-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+    - "jeecg-boot-mysql:host-gateway"
+    - "jeecg-boot-redis:host-gateway"
+    - "jeecg-boot-es:host-gateway"
+    - "jeecg-boot-rabbitmq:host-gateway"
+
+x-java-common: &java-common
+  <<: *infra-hosts
+  restart: on-failure
+  networks:
+    - mynet
+  environment: &java-env
+    TZ: Asia/Shanghai
+    JAVA_TOOL_OPTIONS: >-
+      -Dfile.encoding=UTF-8
+      -javaagent:/skywalking/agent/skywalking-agent.jar
+      -Dskywalking.collector.backend_service=skywalking-oap:11800
+  volumes:
+    - sw_agent:/skywalking/agent:ro
+  depends_on:
+    sw-agent-init:
+      condition: service_completed_successfully
+    skywalking-oap:
+      condition: service_started
+    jeecg-boot-nacos:
+      condition: service_started
+
 services:
-#  jeecg-boot-mysql:
-#    build:
-#      context: ../db
-#    environment:
-#      MYSQL_ROOT_PASSWORD: root
-#      MYSQL_ROOT_HOST: '%'
-#      TZ: Asia/Shanghai
-#    restart: always
-#    container_name: jeecg-boot-mysql
-#    command:
-#      --character-set-server=utf8mb4
-#      --collation-server=utf8mb4_general_ci
-#      --explicit_defaults_for_timestamp=true
-#      --lower_case_table_names=1
-#      --max_allowed_packet=128M
-#      --default-authentication-plugin=caching_sha2_password
-#    ports:
-#      - 3306:3306
-#    networks:
-#      - jeecg-boot
+  skywalking-oap:
+    image: apache/skywalking-oap-server:9.7.0
+    container_name: jeecg-skywalking-oap
+    restart: unless-stopped
+    ports:
+      - "11800:11800"
+      - "12800:12800"
+    environment:
+      TZ: Asia/Shanghai
+      SW_STORAGE: h2
+      SW_HEALTH_CHECKER: default
+    networks:
+      - mynet
 
-#  jeecg-boot-redis:
-#    image: registry.cn-hangzhou.aliyuncs.com/jeecgdocker/redis:5.0
-#    ports:
-#      - 6379:6379
-#    restart: always
-#    container_name: jeecg-boot-redis
-#    hostname: jeecg-boot-redis
-#    networks:
-#      - jeecg-boot
+  skywalking-ui:
+    image: apache/skywalking-ui:9.7.0
+    container_name: jeecg-skywalking-ui
+    restart: unless-stopped
+    depends_on:
+      - skywalking-oap
+    ports:
+      - "18080:8080"
+    environment:
+      TZ: Asia/Shanghai
+      SW_OAP_ADDRESS: http://skywalking-oap:12800
+    networks:
+      - mynet
 
-#  jeecg-boot-pgvector:
-#    image: registry.cn-hangzhou.aliyuncs.com/jeecgdocker/pgvector
-#    container_name: jeecg-boot-pgvector
-#    environment:
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: postgres
-#      POSTGRES_DB: vector_db
-#    ports:
-#      - 5432:5432
-#    restart: always
-#    networks:
-#      - jeecg-boot
+  sw-agent-init:
+    image: apache/skywalking-java-agent:9.3.0-java17
+    container_name: jeecg-sw-agent-init
+    volumes:
+      - sw_agent:/agent
+    entrypoint: ["sh", "-c", "cp -a /skywalking/agent/. /agent/ && echo 'skywalking agent ready'"]
+    networks:
+      - mynet
+    restart: "no"
 
   jeecg-boot-nacos:
-    restart: always
+    <<: *infra-hosts
     build:
       context: ./jeecg-cloud-nacos
-    ports:
-      - 8848:8848
+    image: jeecg-boot-nacos:local
     container_name: jeecg-boot-nacos
-    hostname: host.docker.internal
+    hostname: jeecg-boot-nacos
+    restart: unless-stopped
+    ports:
+      - "18848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: mysql
+      MYSQL-HOST: host.docker.internal
+      MYSQL-PORT: "3306"
+      MYSQL-DB: nacos
+      MYSQL-USER: root
+      MYSQL-PWD: "123456"
+      JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
     networks:
-      - jeecg-boot
+      - mynet
 
   jeecg-boot-system:
-    depends_on:
-      - jeecg-boot-nacos
+    <<: *java-common
     build:
       context: ./jeecg-system-cloud-start
-    container_name: jeecg-system-start
-    hostname: host.docker.internal
-    restart: on-failure
+    image: jeecg-boot-system-cloud:local
+    container_name: jeecg-system-cloud-start
+    hostname: jeecg-boot-system
     environment:
-      - TZ=Asia/Shanghai
-    networks:
-      - jeecg-boot
-
-  jeecg-boot-user:
-    depends_on:
-      - jeecg-boot-nacos
-    build:
-      context: ./jeecg-user-cloud-start
-    container_name: jeecg-user-start
-    hostname: host.docker.internal
-    restart: on-failure
-    environment:
-      - TZ=Asia/Shanghai
-    networks:
-      - jeecg-boot
-
-  jeecg-boot-cuisine:
-    depends_on:
-      - jeecg-boot-nacos
-    build:
-      context: ./jeecg-cuisine-cloud-start
-    container_name: jeecg-cuisine-start
-    hostname: host.docker.internal
-    restart: on-failure
-    environment:
-      - TZ=Asia/Shanghai
-    networks:
-      - jeecg-boot
-
-  jeecg-boot-interaction:
-    depends_on:
-      - jeecg-boot-nacos
-    build:
-      context: ./jeecg-interaction-cloud-start
-    container_name: jeecg-interaction-start
-    hostname: host.docker.internal
-    restart: on-failure
-    environment:
-      - TZ=Asia/Shanghai
-    networks:
-      - jeecg-boot
-
-  jeecg-boot-support:
-    depends_on:
-      - jeecg-boot-nacos
-    build:
-      context: ./jeecg-support-cloud-start
-    container_name: jeecg-support-start
-    hostname: host.docker.internal
-    restart: on-failure
-    environment:
-      - TZ=Asia/Shanghai
-    networks:
-      - jeecg-boot
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-system
+    ports:
+      - "7001:7001"
 
   jeecg-boot-gateway:
-    restart: on-failure
+    <<: *java-common
     build:
       context: ./jeecg-cloud-gateway
-    ports:
-      - 9999:9999
-    depends_on:
-      - jeecg-boot-nacos
-      - jeecg-boot-system
+    image: jeecg-boot-gateway:local
     container_name: jeecg-boot-gateway
-    hostname: host.docker.internal
+    hostname: jeecg-boot-gateway
+    depends_on:
+      sw-agent-init:
+        condition: service_completed_successfully
+      skywalking-oap:
+        condition: service_started
+      jeecg-boot-nacos:
+        condition: service_started
+      jeecg-boot-system:
+        condition: service_started
+    environment:
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-gateway
+    ports:
+      - "9999:9999"
+
+  jeecg-boot-user:
+    <<: *java-common
+    build:
+      context: ./jeecg-user-cloud-start
+    image: jeecg-boot-user-cloud:local
+    container_name: jeecg-user-cloud-start
+    hostname: jeecg-boot-user
+    profiles: ["full"]
+    environment:
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-user
+
+  jeecg-boot-cuisine:
+    <<: *java-common
+    build:
+      context: ./jeecg-cuisine-cloud-start
+    image: jeecg-boot-cuisine-cloud:local
+    container_name: jeecg-cuisine-cloud-start
+    hostname: jeecg-boot-cuisine
+    profiles: ["full"]
+    environment:
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-cuisine
+
+  jeecg-boot-interaction:
+    <<: *java-common
+    build:
+      context: ./jeecg-interaction-cloud-start
+    image: jeecg-boot-interaction-cloud:local
+    container_name: jeecg-interaction-cloud-start
+    hostname: jeecg-boot-interaction
+    profiles: ["full"]
+    environment:
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-interaction
+
+  jeecg-boot-support:
+    <<: *java-common
+    build:
+      context: ./jeecg-support-cloud-start
+    image: jeecg-boot-support-cloud:local
+    container_name: jeecg-support-cloud-start
+    hostname: jeecg-boot-support
+    profiles: ["full"]
+    environment:
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-support
+
+  jeecg-boot-search:
+    <<: *java-common
+    build:
+      context: ./jeecg-search-cloud-start
+    image: jeecg-boot-search-cloud:local
+    container_name: jeecg-search-cloud-start
+    hostname: jeecg-boot-search
+    profiles: ["full"]
+    environment:
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-search
+
+  jeecg-boot-member:
+    <<: *java-common
+    build:
+      context: ./jeecg-member-cloud-start
+    image: jeecg-boot-member-cloud:local
+    container_name: jeecg-member-cloud-start
+    hostname: jeecg-boot-member
+    profiles: ["full"]
+    environment:
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-member
+
+  jeecg-boot-ai:
+    <<: *java-common
+    build:
+      context: ./jeecg-ai-cloud-start
+    image: jeecg-boot-ai-cloud:local
+    container_name: jeecg-ai-cloud-start
+    hostname: jeecg-boot-ai
+    profiles: ["full"]
+    environment:
+      <<: *java-env
+      SW_AGENT_NAME: jeecg-ai
+
+  # 前端：使用 ./web/dist（先在 jeecgboot-vue3 执行 pnpm build:dockercloud 后拷贝到 web/dist）
+  jeecg-vue:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: jeecgboot-vue3-cloud:local
+    container_name: jeecgboot-vue3-nginx-cloud
+    hostname: jeecg-vue
+    restart: unless-stopped
+    depends_on:
+      - jeecg-boot-gateway
+    ports:
+      - "3100:80"
     networks:
-      - jeecg-boot
+      - mynet
 
 networks:
-  jeecg-boot:
+  mynet:
     external: true
     name: mynet
 
-#  jeecg-boot-sentinel:
-#    restart: on-failure
-#    build:
-#      context: ./jeecg-visual/jeecg-cloud-sentinel
-#    ports:
-#      - 9000:9000
-#    depends_on:
-#      - jeecg-boot-nacos
-#      - jeecg-boot-demo
-#      - jeecg-boot-system
-#      - jeecg-boot-gateway
-#    container_name: jeecg-boot-sentinel
-#    hostname: jeecg-boot-sentinel
-#
-#  jeecg-boot-xxljob:
-#    build:
-#      context: ./jeecg-visual/jeecg-cloud-xxljob
-#    ports:
-#      - 9080:9080
-#    container_name: jeecg-boot-xxljob
-#    hostname: jeecg-boot-xxljob
+volumes:
+  sw_agent:
+    name: jeecg_sw_agent

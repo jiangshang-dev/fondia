@@ -28,7 +28,7 @@ spring:
         master:
           url: jdbc:mysql://jeecg-boot-mysql:3306/jeecg-boot?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
           username: root
-          password: root
+          password: 123456
           driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
@@ -38,8 +38,8 @@ spring:
       port: 6379
   rabbitmq:
     host: jeecg-boot-rabbitmq
-    username: guest
-    password: guest
+    username: admin
+    password: admin
     port: 5672
     publisher-confirms: true
     publisher-returns: true
@@ -72,9 +72,10 @@ jeecg:
     bucketName: jeecgdev
     staticDomain: ??
   elasticsearch:
-    cluster-name: jeecg-ES
+    cluster-name: docker-cluster
+    # 映射到宿主机已有 elasticsearch:9200（7.17.10）
     cluster-nodes: jeecg-boot-es:9200
-    check-enabled: false
+    check-enabled: true
   file-view-domain: 127.0.0.1:8012
   minio:
     minio_url: http://minio.jeecg.com

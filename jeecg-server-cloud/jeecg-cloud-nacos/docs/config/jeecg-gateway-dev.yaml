@@ -9,6 +9,7 @@ spring:
   data:
     redis:
       database: 0
+      # 本地 Docker：extra_hosts 映射到宿主机 redis-stack:6379
       host: jeecg-boot-redis
       port: 6379
       password:
