@@ -160,7 +160,7 @@ spring:
       database: 0
       host: 47.95.212.174
       port: 6379
-      password:
+      password: Ling@7ujm
   rabbitmq:
     host: 47.95.212.174
     username: admin
