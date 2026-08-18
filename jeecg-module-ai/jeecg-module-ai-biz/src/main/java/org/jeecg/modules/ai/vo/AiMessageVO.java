@@ -11,7 +11,6 @@ public class AiMessageVO {
 
     private String id;
     private String sessionId;
-    /** USER | AI */
     private String senderType;
     private String msgType;
     private String content;
