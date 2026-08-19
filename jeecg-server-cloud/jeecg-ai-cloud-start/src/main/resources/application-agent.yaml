@@ -12,14 +12,22 @@ fondia:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: ${REDIS_DATABASE:0}
-      key-prefix: ${REDIS_KEY_PREFIX:agentscope-demo:session:}
+      key-prefix: ${REDIS_KEY_PREFIX:agentscope-fondia:session:}
     memory:
       compaction-enabled: ${COMPACTION_ENABLED:true}
       compaction-trigger-messages: ${COMPACTION_TRIGGER_MESSAGES:10}
       compaction-keep-messages: ${COMPACTION_KEEP_MESSAGES:5}
       # 开启小模型压缩
       smallModelEnabled: true
+      # 开启主编排 + 子 Agent 委派（agent_spawn）
+      subagent-eable: true
       compactionModelName: qwen/qwen3-1.7b
       compactionModelBaseUrl: http://192.168.1.88:1234
       compactionModelApiKey: sk-d3580966983048d99b53a77fc67e8372
+    # 主 Agent 系统提示词：正文在 Nacos Data Id = agent-system-message.txt
+    system:
+      chat:
+        data-id: agent-system-message.txt
+        group: DEFAULT_GROUP
+        timeout-ms: 20000
 
