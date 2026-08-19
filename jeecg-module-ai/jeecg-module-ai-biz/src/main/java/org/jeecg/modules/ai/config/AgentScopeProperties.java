@@ -49,6 +49,9 @@ public class AgentScopeProperties {
         private String compactionModelBaseUrl = "http://192.168.1.88:1234";
         // 压缩用小模型 API Key
         private String compactionModelApiKey = "sk-d3580966983048d99b53a77fc67e8372";
+
+        // 是否启用多agent
+        private boolean subagentEable = false;
     }
 
     @Data
