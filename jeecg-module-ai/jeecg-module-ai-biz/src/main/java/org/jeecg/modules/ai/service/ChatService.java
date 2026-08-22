@@ -21,6 +21,9 @@ public interface ChatService {
      */
     AiSessionVO createSession(String authorization, String source);
 
+    /** 获取用户当前（最近打开）的 AI 会话，用于 App 恢复聊天页。 */
+    AiSessionVO activeSession(String authorization, String source);
+
     /**
      * AI会话历史消息
      * @param authorization token

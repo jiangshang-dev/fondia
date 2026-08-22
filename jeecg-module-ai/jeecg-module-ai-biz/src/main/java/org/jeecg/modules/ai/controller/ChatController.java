@@ -47,6 +47,13 @@ public class ChatController {
         return Result.OK(chatService.createSession(authorization, source));
     }
 
+    @Operation(summary = "获取当前AI对话会话")
+    @GetMapping("/session/active")
+    public Result<AiSessionVO> activeSession(@RequestHeader("Authorization") String authorization,
+            @RequestParam(defaultValue = "ai_tab") String source) {
+        return Result.OK(chatService.activeSession(authorization, source));
+    }
+
     @Operation(summary = "AI会话历史消息")
     @GetMapping("/session/{id}/messages")
     public Result<List<AiMessageVO>> messagesById(@RequestHeader("Authorization") String authorization, @PathVariable("id") String id) {
