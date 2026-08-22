@@ -41,9 +41,8 @@ public class FullObservabilityMiddleware implements MiddlewareBase {
         int seq = reasoningSeq.incrementAndGet();
         long start = System.currentTimeMillis();
         String sessionId = ctx != null ? ctx.getSessionId() : null;
-        log.info("[LLM] 开始推理阶段 reasoning#{} sessionId={}", seq, sessionId);
-        String name = agent.getName();
-        log.info("agent名称:{}", name);
+        String name = agent != null ? agent.getName() : "-";
+        log.info("[LLM] 开始推理阶段 reasoning#{} sessionId={} agent={}", seq, sessionId, name);
         return next.apply(input).doOnComplete(() -> log.info("[LLM] 推理阶段结束 reasoning#{} sessionId={} 耗时={}ms", seq, sessionId, System.currentTimeMillis() - start))
                 .doOnError(e -> {
                             log.warn("[LLM] 推理阶段失败 reasoning#{} sessionId={} 耗时={}ms err={}", seq, sessionId, System.currentTimeMillis() - start, e.toString());
@@ -59,7 +58,8 @@ public class FullObservabilityMiddleware implements MiddlewareBase {
         long start = System.currentTimeMillis();
         String sessionId = ctx != null ? ctx.getSessionId() : null;
         String tools = summarizeTools(input);
-        log.info("[TOOL] 开始执行工具 acting#{} sessionId={} tools={}", seq, sessionId, tools);
+        String name = agent != null ? agent.getName() : "-";
+        log.info("[TOOL] 开始执行工具 acting#{} sessionId={} agent={} tools={}", seq, sessionId, name, tools);
         return next.apply(input)
                 .doOnComplete(() -> log.info("[TOOL] 工具执行结束 acting#{} sessionId={} tools={} 耗时={}ms", seq, sessionId, tools, System.currentTimeMillis() - start))
                 .doOnError(e -> log.warn("[TOOL] 工具执行失败 acting#{} sessionId={} tools={} 耗时={}ms err={}", seq, sessionId, tools, System.currentTimeMillis() - start, e.toString()))

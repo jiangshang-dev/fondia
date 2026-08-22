@@ -13,10 +13,14 @@ public class AgentScopeProperties {
 
     private ModelProperties llm = new ModelProperties();
     private String agentName = "assistant";
-    private String workspace = "./.agentscope/workspace";
+    private String workspace = "./.fondiaAgent";
     private RedisProperties redis = new RedisProperties();
     private MemoryProperties memory = new MemoryProperties();
-    private System system; // 系统提示语
+    /**
+     * 系统提示词在 Nacos 中的 dataId 定位。
+     * 正文在独立配置 {@code agent-system-message.txt}，不写进 yaml。
+     */
+    private System system = new System();
 
     @Data
     public static class RedisProperties {
@@ -50,21 +54,22 @@ public class AgentScopeProperties {
         // 压缩用小模型 API Key
         private String compactionModelApiKey = "sk-d3580966983048d99b53a77fc67e8372";
 
-        // 是否启用多agent
+        // 是否启用多agent（yaml: fondia.agentscope.memory.subagent-eable）
         private boolean subagentEable = false;
     }
 
     @Data
     public static class System {
-        private Chat routeAgent; // 路由智能体系统提示词
-        private Chat chat; // 系统提示语，用于材料相关业务
-        private Chat text; // 文本提示语，用于问答回复、润色等文本类型的业务
+        private Chat routeAgent;
+        /** 主 Agent 系统提示词，对应 Nacos Data Id：agent-system-message.txt */
+        private Chat chat = new Chat();
+        private Chat text;
 
         @Data
         public static class Chat {
-            private String dataId;
+            private String dataId = "agent-system-message.txt";
             private String group = "DEFAULT_GROUP";
-            private long timeoutMs = 20000L; // 读取的超时时间，单位毫秒
+            private long timeoutMs = 20000L;
         }
     }
 }

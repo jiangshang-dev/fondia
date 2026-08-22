@@ -76,11 +76,22 @@ public class ChatServiceImpl implements ChatService {
                     log.warn("前端连接主动断开或取消会话聊天，会话ID: {}", dto.getSessionId());
                 })
                 .concatMap(agentEvent -> {
+                    String source = agentEvent.getSource();
+                    boolean fromSubagent = source != null && !source.isBlank();
+
+                    if (fromSubagent && agentEvent instanceof AgentStartEvent) {
+                        MessageDataVO<Object> messageData = new MessageDataVO<>();
+                        messageData.setMessage(subagentDisplayName(source) + "开始处理");
+                        messageData.setStreamEvent(THINKING_DELTA);
+                        messageData.setTimestamp(System.currentTimeMillis());
+                        log.info("子 Agent 启动 sessionId={} source={}", dto.getSessionId(), source);
+                        return Flux.just(SseResponse.chunkThinking(dto.getSessionId(), messageData));
+                    }
+
                     if (agentEvent instanceof ThinkingBlockDeltaEvent thinkingBlockDeltaEvent) {
                         String delta = thinkingBlockDeltaEvent.getDelta();
-
                         MessageDataVO<Object> messageData = new MessageDataVO<>();
-                        messageData.setMessage(delta);
+                        messageData.setMessage(fromSubagent ? "[" + subagentDisplayName(source) + "] " + delta : delta);
                         messageData.setStreamEvent(THINKING_DELTA);
                         messageData.setTimestamp(System.currentTimeMillis());
                         return Flux.just(SseResponse.chunkThinking(dto.getSessionId(), messageData));
@@ -88,13 +99,17 @@ public class ChatServiceImpl implements ChatService {
 
                     if (agentEvent instanceof TextBlockDeltaEvent textBlockDeltaEvent) {
                         String delta = textBlockDeltaEvent.getDelta();
-                        List<SseResponse<MessageDataVO<Object>>> out = new ArrayList<>();
                         MessageDataVO<Object> body = new MessageDataVO<>();
-                        body.setStreamEvent(ANSWER_DELTA);
                         body.setMessage(delta);
                         body.setTimestamp(System.currentTimeMillis());
-                        out.add(SseResponse.chunk(dto.getSessionId(), body));
-                        return Flux.fromIterable(out);
+                        if (fromSubagent) {
+                            // 子 Agent 文本不作为最终回答，避免和总管回复混在一起
+                            body.setStreamEvent(THINKING_DELTA);
+                            body.setMessage("[" + subagentDisplayName(source) + "] " + delta);
+                            return Flux.just(SseResponse.chunkThinking(dto.getSessionId(), body));
+                        }
+                        body.setStreamEvent(ANSWER_DELTA);
+                        return Flux.just(SseResponse.chunk(dto.getSessionId(), body));
                     }
 
                     if (agentEvent instanceof RequireUserConfirmEvent requireUserConfirmEvent) {
@@ -102,6 +117,8 @@ public class ChatServiceImpl implements ChatService {
                     }
 
                     if (agentEvent instanceof ToolCallStartEvent toolCallStartEvent) {
+                        log.info("工具开始调用 sessionId={} tool={} source={}",
+                                dto.getSessionId(), toolCallStartEvent.getToolCallName(), source);
                         MessageDataVO<Object> toolData = toolThinkingService.buildToolStreamData(TOOL_CALL_START, toolCallStartEvent.getToolCallId(), toolCallStartEvent.getToolCallName(), null);
                         toolData.setStreamEvent(TOOL_CALL_START);
                         return Flux.just(SseResponse.chunkTool(dto.getSessionId(), toolData));
@@ -180,5 +197,21 @@ public class ChatServiceImpl implements ChatService {
             throw new JeecgBootException("用户未登录或Token无效");
         }
         return String.valueOf(userId);
+    }
+
+    private static String subagentDisplayName(String source) {
+        String id = source;
+        int slash = source.lastIndexOf('/');
+        if (slash >= 0 && slash < source.length() - 1) {
+            id = source.substring(slash + 1);
+        }
+        return switch (id) {
+            case "menu-agent" -> "菜谱专家";
+            case "nutrition-agent" -> "营养专家";
+            case "ingredient-agent" -> "食材专家";
+            case "plan-agent" -> "饮食计划专家";
+            case "cooking-agent" -> "烹饪专家";
+            default -> id;
+        };
     }
 }

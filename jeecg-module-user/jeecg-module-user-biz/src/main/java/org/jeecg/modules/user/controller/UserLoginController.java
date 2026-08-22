@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "用户登录")
 @RestController
 @RequestMapping("/user/auth")
-public class LoginController {
+public class UserLoginController {
 
     @Resource
     private IFdUserService userService;

@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.UnavailableSecurityManagerException;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.UnauthorizedException;
 import org.jeecg.common.api.dto.LogDTO;
@@ -280,12 +281,16 @@ public class JeecgBootExceptionHandler {
         }
 
        
-		//获取登录用户信息
-		LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
-		if(sysUser!=null){
-			log.setUserid(sysUser.getUsername());
-			log.setUsername(sysUser.getRealname());
-
+		// SSE / 异步线程不一定绑定 Shiro 的 SecurityManager。记录异常日志不能因此再抛异常，
+		// 否则会掩盖原始异常并中断已经开始返回的流式响应。
+		try {
+			LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+			if(sysUser!=null){
+				log.setUserid(sysUser.getUsername());
+				log.setUsername(sysUser.getRealname());
+			}
+		} catch (UnavailableSecurityManagerException ignored) {
+			// 无 Shiro 上下文时保留匿名日志即可。
 		}
 
         baseCommonService.addLog(log);
