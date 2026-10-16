@@ -292,8 +292,8 @@ jeecg:
   #阿里云oss存储和大鱼短信秘钥配置
   oss:
     endpoint: oss-cn-beijing.aliyuncs.com
-    accessKey: LTAI5t6L1ws4DxUta3siM3mS
-    secretKey: j0suiDkcWrOEx1DW9dcY6QS1muijl5
+    accessKey:
+    secretKey:
     bucketName: jeecgdev-sess
     staticDomain: jeecgboot
     # 短信模板
@@ -438,9 +438,9 @@ fondia:
       gateway-url: https://openapi.alipay.com/gateway.do
   aliyun-green:
     enabled: true
-    accessKeyId: LTAI5t6L1ws4DxUta3siM3mS
-    accessKeySecret: j0suiDkcWrOEx1DW9dcY6QS1muijl5
+    accessKeyId:
+    accessKeySecret:
 
 aliyun:
-  accessKeyId: LTAI5tAMhyQ5M4ax36oedKcQ
-  accessKeySecret: DqOLunL4Qt8bWSxhi2mEktfcUKacVG
+  accessKeyId:
+  accessKeySecret:
