@@ -14,6 +14,9 @@
   <img src="https://img.shields.io/badge/JDK-21-orange.svg" alt="JDK 21">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5.5-brightgreen.svg" alt="Spring Boot">
   <img src="https://img.shields.io/badge/JeecgBoot-3.9.2-1890ff.svg" alt="JeecgBoot">
+  <a href="https://github.com/jiangshang-dev/fondia_app">
+    <img src="https://img.shields.io/badge/app-fondia__app-ff6b35.svg" alt="Fondia App">
+  </a>
 </p>
 
 <h1 align="center">Fondia 饭典</h1>
@@ -53,7 +56,14 @@ Fondia（饭典）是一套「菜谱内容 + AI 厨伴 + 会员权益」的后�
 - 内容社区类 App 的微服务边界
 - SSE 流式 AI、Elasticsearch 搜索、会员配额和支付回调
 
-客户端（Flutter、HarmonyOS）不在本仓库。本仓库是后端与管理端对接所需的服务端代码。
+Flutter 客户端在独立仓库 [jiangshang-dev/fondia_app](https://github.com/jiangshang-dev/fondia_app)。本仓库是后端、网关和管理端对接所需的服务端代码。
+
+## 相关仓库
+
+| 仓库 | 地址 | 内容 |
+|------|------|------|
+| 后端 | [jiangshang-dev/fondia](https://github.com/jiangshang-dev/fondia) | 本仓库 |
+| App | [jiangshang-dev/fondia_app](https://github.com/jiangshang-dev/fondia_app) | Flutter 客户端：首页、分类、AI 厨伴、会员与我的 |
 
 ## 功能
 
@@ -71,7 +81,7 @@ Fondia（饭典）是一套「菜谱内容 + AI 厨伴 + 会员权益」的后�
 ## 架构
 
 ```text
-Flutter / HarmonyOS / 管理端
+Flutter App（fondia_app） / 管理端
             │
             ▼
      Gateway :9999
@@ -244,6 +254,7 @@ docker compose --profile full up -d --build
 
 ## 致谢
 
+- [Fondia App](https://github.com/jiangshang-dev/fondia_app)：Flutter 客户端
 - [JeecgBoot](https://github.com/jeecgboot/JeecgBoot)：低代码与微服务底座
 - Spring、Nacos、MyBatis-Plus、Elasticsearch、SkyWalking
 
