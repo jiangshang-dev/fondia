@@ -63,6 +63,7 @@ Flutter 客户端在独立仓库 [jiangshang-dev/fondia_app](https://github.com/
 | 仓库 | 地址 | 内容 |
 |------|------|------|
 | 后端 | [jiangshang-dev/fondia](https://github.com/jiangshang-dev/fondia) | 本仓库 |
+| 前端 | [jiangshang-dev/fondia-views](https://github.com/jiangshang-dev/fondia-views) | 管理后台前端 Vue3、TypeScript  |
 | App | [jiangshang-dev/fondia_app](https://github.com/jiangshang-dev/fondia_app) | Flutter 客户端：首页、分类、AI 厨伴、会员与我的 |
 
 ## 功能
